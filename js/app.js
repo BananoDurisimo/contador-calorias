@@ -1,6 +1,6 @@
-import { LocalDB } from './db-local.js?v=5';
-import { SupabaseDB, getSupabaseClient } from './db-supabase.js?v=5';
-import { calcPlan, weeklyAnalysis } from './plan.js?v=5';
+import { LocalDB } from './db-local.js?v=6';
+import { SupabaseDB, getSupabaseClient } from './db-supabase.js?v=6';
+import { calcPlan, weeklyAnalysis } from './plan.js?v=6';
 
 // ---------------------------------------------------------------------------
 // Utilidades
@@ -331,8 +331,14 @@ async function renderHabits() {
 
   const steps = num(b.steps);
   const sh = $('#hStepsHint');
-  const kmTxt = steps ? ` · ≈ ${fmt(steps / stepsPerKm(), 1)} km` : '';
-  sh.textContent = (steps ? (steps >= g.steps ? '✓ meta cumplida' : `faltan ${fmt(g.steps - steps)}`) : `meta ${fmt(g.steps)}`) + kmTxt;
+  const spk = stepsPerKm();
+  const kmDone = steps / spk;
+  const kmMissing = (g.steps - steps) / spk;
+  sh.textContent = !steps
+    ? `meta ${fmt(g.steps)} pasos (≈ ${fmt(g.steps / spk, 1)} km)`
+    : steps >= g.steps
+      ? `✓ meta cumplida · llevas ≈ ${fmt(kmDone, 1)} km`
+      : `llevas ≈ ${fmt(kmDone, 1)} km · faltan ${fmt(g.steps - steps)} pasos (≈ ${fmt(kmMissing, 1)} km)`;
   sh.className = `hint ${steps >= g.steps ? 'ok' : steps ? 'warn' : ''}`;
 
   const sleep = num(b.sleep_h);
