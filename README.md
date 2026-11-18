@@ -1,5 +1,7 @@
 # Contador de Calorías
 
+**App en línea:** https://bananodurisimo.github.io/contador-calorias/
+
 Aplicación web para registrar las calorías y macronutrientes que consumes cada día usando **tus propios productos** con sus valores nutricionales.
 
 ## Funciones
@@ -40,4 +42,4 @@ python3 -m http.server 8000
 
 ## Despliegue
 
-Publicado con **GitHub Pages** desde la rama `main` (carpeta raíz).
+Publicado con **GitHub Pages** desde la rama `main` (carpeta raíz): https://bananodurisimo.github.io/contador-calorias/
