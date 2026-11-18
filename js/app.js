@@ -1,6 +1,6 @@
-import { LocalDB } from './db-local.js?v=3';
-import { SupabaseDB, getSupabaseClient } from './db-supabase.js?v=3';
-import { calcPlan, weeklyAnalysis } from './plan.js?v=3';
+import { LocalDB } from './db-local.js?v=4';
+import { SupabaseDB, getSupabaseClient } from './db-supabase.js?v=4';
+import { calcPlan, weeklyAnalysis } from './plan.js?v=4';
 
 // ---------------------------------------------------------------------------
 // Utilidades
@@ -293,7 +293,7 @@ function renderDay() {
         <div class="entry">
           <div class="entry-main" data-edit="${e.id}" role="button" tabindex="0" title="Editar cantidad">
             <div class="entry-name">${esc(e.product_name)}</div>
-            <div class="entry-sub">${fmt(e.amount, 2)} ${esc(e.unit)} · P ${fmt(e.protein, 1)} · C ${fmt(e.carbs, 1)} · G ${fmt(e.fat, 1)}</div>
+            <div class="entry-sub">${fmt(e.amount, 2)} ${esc(e.unit)} · <span class="m-p">P ${fmt(e.protein, 1)}</span> · <span class="m-c">C ${fmt(e.carbs, 1)}</span> · <span class="m-f">G ${fmt(e.fat, 1)}</span></div>
           </div>
           <span class="entry-kcal">${fmt(r0(e.kcal))} kcal</span>
           <button class="del-btn" data-del-entry="${e.id}" aria-label="Eliminar ${esc(e.product_name)}">✕</button>
@@ -427,7 +427,7 @@ function openEntryDialog({ meal = defaultMealForNow(), entry = null } = {}) {
   }
   updateEntryPreview();
   $('#entryDialog').showModal();
-  if (!entry) setTimeout(() => $('#pickerSearch').focus(), 30);
+  if (!entry) $('#pickerSearch').focus();
 }
 
 function renderPicker() {
@@ -600,7 +600,7 @@ function openProductDialog(product = null) {
   syncUnitField();
   updateMacroHint();
   $('#productDialog').showModal();
-  setTimeout(() => form.name.focus(), 30);
+  form.name.focus();
 }
 
 async function submitProduct(ev) {
