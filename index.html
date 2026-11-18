@@ -7,7 +7,7 @@
   <meta name="description" content="Registra tus calorías, macros, peso y hábitos con tus propios productos." />
   <title>Contador de Calorías</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='44' fill='%230f766e'/><text x='50' y='66' font-size='46' text-anchor='middle' fill='white' font-family='Arial' font-weight='700'>kc</text></svg>" />
-  <link rel="stylesheet" href="css/styles.css?v=2" />
+  <link rel="stylesheet" href="css/styles.css?v=3" />
 </head>
 <body>
   <header class="topbar">
@@ -47,6 +47,10 @@
   <main>
     <!-- ============ DIARIO ============ -->
     <section class="view active" id="view-hoy" role="tabpanel">
+      <div class="card banner hidden" id="loginBanner">
+        <span>☁️ Inicia sesión para guardar tus datos en la nube y verlos en cualquier dispositivo.</span>
+        <button class="btn primary small" type="button" id="loginBannerBtn">Iniciar sesión</button>
+      </div>
       <div class="date-nav">
         <button class="icon-btn" id="prevDay" type="button" aria-label="Día anterior">‹</button>
         <input type="date" id="dateInput" aria-label="Fecha" />
@@ -277,13 +281,12 @@
         <p class="muted" id="dbStatusText"></p>
 
         <details id="supabaseDetails">
-          <summary>Sincronizar en la nube con Supabase</summary>
+          <summary>Nube (Supabase): cuenta y conexión</summary>
           <p class="muted small">
-            Crea un proyecto gratuito en supabase.com, ejecuta el archivo
-            <code>supabase/schema.sql</code> del repositorio en el SQL Editor y pega aquí
-            la <em>Project URL</em> y la clave <em>anon / publishable</em>
-            (Project Settings → API). La clave anon es pública por diseño: tus datos los
-            protege el inicio de sesión y las políticas de seguridad por usuario.
+            La app ya viene conectada a tu proyecto de Supabase: solo crea tu cuenta o inicia sesión.
+            Si quieres usar otro proyecto, ejecuta <code>supabase/schema.sql</code> en su SQL Editor y pega
+            aquí su <em>Project URL</em> y su clave <em>publishable</em>. Esa clave es pública por diseño:
+            tus datos los protege el inicio de sesión y las políticas de seguridad por usuario.
           </p>
           <form id="supabaseForm" class="stack">
             <label>Project URL<input type="url" name="url" placeholder="https://xxxx.supabase.co" required /></label>
@@ -420,6 +423,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script type="module" src="js/app.js?v=2"></script>
+  <script type="module" src="js/app.js?v=3"></script>
 </body>
 </html>

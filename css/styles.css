@@ -342,3 +342,5 @@ dialog.tips { width: min(640px, calc(100vw - 24px)); }
 .tips-block { background: var(--surface-2); border-radius: 12px; padding: 12px 14px; }
 .tips-block h3 { margin-bottom: 8px; font-size: .95rem; color: var(--accent); }
 .tips-block ul, .tips-block ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: .92rem; }
+.banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; background: var(--accent-soft); border-color: transparent; }
+.banner span { flex: 1; min-width: 200px; font-weight: 500; }

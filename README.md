@@ -23,7 +23,11 @@ Aplicación web para registrar las calorías y macronutrientes que consumes cada
 | Por defecto | **IndexedDB** (base de datos integrada en el navegador) | Solo en ese navegador y dispositivo. No requiere configuración. |
 | Opcional (recomendado) | **Supabase** (PostgreSQL en la nube, plan gratuito) | En la nube, con inicio de sesión. Accesible desde cualquier dispositivo. |
 
-### Activar Supabase
+### Supabase
+
+La app ya viene conectada al proyecto `contador-calorias` (región East US). Solo hay que crear la cuenta o iniciar sesión en **Ajustes → Nube**.
+
+Para usar otro proyecto:
 
 1. Crea una cuenta y un proyecto en [supabase.com](https://supabase.com).
 2. En el proyecto: **SQL Editor → New query**, pega el contenido de [`supabase/schema.sql`](supabase/schema.sql) y pulsa **Run**.

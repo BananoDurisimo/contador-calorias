@@ -1,6 +1,6 @@
-import { LocalDB } from './db-local.js?v=2';
-import { SupabaseDB, getSupabaseClient } from './db-supabase.js?v=2';
-import { calcPlan, weeklyAnalysis } from './plan.js?v=2';
+import { LocalDB } from './db-local.js?v=3';
+import { SupabaseDB, getSupabaseClient } from './db-supabase.js?v=3';
+import { calcPlan, weeklyAnalysis } from './plan.js?v=3';
 
 // ---------------------------------------------------------------------------
 // Utilidades
@@ -18,6 +18,12 @@ const MEALS = [
 const PROTEIN_PER_MEAL = [40, 50];
 const DEFAULT_GOALS = { kcal: 2100, protein: 180, carbs: 200, fat: 65, fiber: 30, water_ml: 3500, steps: 8000, sleep_h: 7 };
 const CONFIG_KEY = 'cc-config';
+// Proyecto Supabase por defecto. La clave "publishable" es pública por diseño:
+// los datos están protegidos por el inicio de sesión y Row Level Security.
+const DEFAULT_SUPABASE = {
+  supabaseUrl: 'https://xhylwvmrpdcbplubqoww.supabase.co',
+  supabaseKey: 'sb_publishable_Q8iVqrvOtIGJKUNRqB21XA_wK2MlNEY',
+};
 const ADJUST_KEY = 'cc-last-adjust';
 
 const uuid = () =>
@@ -135,12 +141,20 @@ function readConfig() {
 function writeConfig(cfg) {
   localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg));
 }
+// Configuración efectiva: la guardada por el usuario, o el proyecto por defecto
+// (salvo que el usuario haya quitado la conexión).
+function effectiveConfig() {
+  const c = readConfig();
+  if (c.supabaseUrl && c.supabaseKey) return c;
+  if (c.localOnly) return {};
+  return { ...DEFAULT_SUPABASE };
+}
 
 // ---------------------------------------------------------------------------
 // Conexión a la base de datos
 // ---------------------------------------------------------------------------
 async function initDatabase() {
-  const cfg = readConfig();
+  const cfg = effectiveConfig();
   state.db = state.localDB;
   state.sb = null;
   state.user = null;
@@ -163,12 +177,13 @@ async function initDatabase() {
 
 function renderDbStatus() {
   const badge = $('#dbBadge');
-  const cfg = readConfig();
+  const cfg = effectiveConfig();
   const configured = !!(cfg.supabaseUrl && cfg.supabaseKey);
   const cloud = state.db && state.db.kind === 'supabase';
 
-  badge.textContent = cloud ? `Nube · ${state.user.email}` : 'Local';
+  badge.textContent = cloud ? `Nube · ${state.user.email}` : configured ? 'Local · inicia sesión' : 'Local';
   badge.classList.toggle('cloud', cloud);
+  $('#loginBanner').classList.toggle('hidden', cloud || !configured || !state.sb);
 
   $('#dbStatusText').textContent = cloud
     ? `Tus datos se guardan en Supabase (PostgreSQL) con la cuenta ${state.user.email}. Están disponibles en cualquier dispositivo.`
@@ -950,7 +965,8 @@ async function submitSupabase(ev) {
   const url = f.url.value.trim().replace(/\/+$/, '');
   const key = f.key.value.trim();
   if (!/^https:\/\/.+/.test(url)) return toast('La URL debe empezar por https://', true);
-  writeConfig({ ...readConfig(), supabaseUrl: url, supabaseKey: key });
+  const { localOnly, ...rest } = readConfig();
+  writeConfig({ ...rest, supabaseUrl: url, supabaseKey: key });
   await initDatabase();
   if (state.sb) toast('Conexión guardada. Ahora inicia sesión o crea una cuenta.');
 }
@@ -960,7 +976,7 @@ async function forgetSupabase() {
   if (state.sb) await state.sb.auth.signOut().catch(() => {});
   const cfg = readConfig();
   delete cfg.supabaseUrl; delete cfg.supabaseKey;
-  writeConfig(cfg);
+  writeConfig({ ...cfg, localOnly: true });
   await initDatabase();
   await reloadAll();
   toast('Conexión eliminada');
@@ -975,6 +991,7 @@ async function login() {
   await initDatabase();
   await reloadAll();
   toast('Sesión iniciada. Datos en la nube.');
+  await offerMigration();
 }
 
 async function signup() {
@@ -989,6 +1006,7 @@ async function signup() {
     await initDatabase();
     await reloadAll();
     toast('Cuenta creada y sesión iniciada');
+    await offerMigration();
   } else {
     toast('Cuenta creada. Revisa tu correo para confirmarla y luego inicia sesión.');
   }
@@ -999,6 +1017,15 @@ async function logout() {
   await initDatabase();
   await reloadAll();
   toast('Sesión cerrada. Usando la base local.');
+}
+
+// Si hay datos en este navegador y la cuenta en la nube está vacía, ofrece copiarlos.
+async function offerMigration() {
+  if (state.db.kind !== 'supabase') return;
+  const local = await state.localDB.exportAll();
+  const hasLocal = local.products.length || local.entries.length || local.body.length || local.profile;
+  if (!hasLocal || state.products.length) return;
+  await migrate();
 }
 
 async function migrate() {
@@ -1051,6 +1078,7 @@ function bindEvents() {
 
   $$('.tab').forEach((t) => t.addEventListener('click', () => showView(t.dataset.view)));
   $('#dbBadge').addEventListener('click', () => showView('ajustes'));
+  $('#loginBannerBtn').addEventListener('click', () => { showView('ajustes'); $('#supabaseDetails').open = true; setTimeout(() => $('#authEmail').focus(), 100); });
   $('#tipsBtn').addEventListener('click', () => $('#tipsDialog').showModal());
 
   // Fecha
@@ -1158,7 +1186,7 @@ function bindEvents() {
   await reloadAll();
   if (state.sb) {
     state.sb.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN' && state.db.kind !== 'supabase') initDatabase().then(reloadAll);
+      if (event === 'SIGNED_IN' && state.db.kind !== 'supabase') initDatabase().then(reloadAll).then(offerMigration);
     });
   }
 })();
