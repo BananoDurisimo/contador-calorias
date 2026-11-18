@@ -16,6 +16,14 @@ Aplicación web para registrar las calorías y macronutrientes que consumes cada
 - **Tips al entrar**: recordatorio de las reglas de seguimiento cada vez que abres la app.
 - **Copia de seguridad** en JSON (exportar / importar).
 
+## App para el teléfono (PWA)
+
+La página se instala como app en Android: abre la URL en Chrome y pulsa **Instalar app** (o menú ⋮ → *Instalar app*).
+
+- Ícono propio, pantalla completa y accesos directos (*Agregar comida*, *Registrar peso y pasos*, *Ver progreso*).
+- Funciona sin conexión gracias al service worker (`sw.js`); con internet siempre carga la última versión.
+- Usa la misma base de datos (Supabase) que la versión web.
+
 ## Base de datos
 
 | Modo | Tecnología | Dónde viven los datos |

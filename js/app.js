@@ -1,6 +1,6 @@
-import { LocalDB } from './db-local.js?v=6';
-import { SupabaseDB, getSupabaseClient } from './db-supabase.js?v=6';
-import { calcPlan, weeklyAnalysis } from './plan.js?v=6';
+import { LocalDB } from './db-local.js?v=7';
+import { SupabaseDB, getSupabaseClient } from './db-supabase.js?v=7';
+import { calcPlan, weeklyAnalysis } from './plan.js?v=7';
 
 // ---------------------------------------------------------------------------
 // Utilidades
@@ -110,7 +110,8 @@ async function safe(fn, errMsg = 'Ocurrió un error') {
     return await fn();
   } catch (err) {
     console.error(err);
-    toast(`${errMsg}: ${err.message || err}`, true);
+    const offline = !navigator.onLine && state.db && state.db.kind === 'supabase';
+    toast(offline ? `${errMsg}: no hay conexión a internet. Inténtalo de nuevo cuando vuelva.` : `${errMsg}: ${err.message || err}`, true);
     return FAIL;
   }
 }
@@ -1210,14 +1211,100 @@ function bindEvents() {
 }
 
 // ---------------------------------------------------------------------------
+// App móvil (PWA): service worker, instalación, accesos directos, sin conexión
+// ---------------------------------------------------------------------------
+let installPrompt = null;
+const isStandalone = () =>
+  window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+function renderInstallState() {
+  const can = !!installPrompt && !isStandalone();
+  $('#installBtn').classList.toggle('hidden', !can);
+  $('#installRow').classList.toggle('hidden', !can);
+  $('#installSteps').classList.toggle('hidden', isStandalone() || can);
+  $('#appStatus').textContent = isStandalone()
+    ? '✓ Estás usando la app instalada.'
+    : can
+      ? 'Instala la app para abrirla desde tu pantalla de inicio, a pantalla completa y sin conexión.'
+      : 'Puedes instalar esta página como app en tu teléfono:';
+}
+
+async function promptInstall() {
+  if (!installPrompt) return;
+  installPrompt.prompt();
+  const { outcome } = await installPrompt.userChoice;
+  installPrompt = null;
+  renderInstallState();
+  if (outcome === 'accepted') toast('Instalando la app…');
+}
+
+function renderOnline() {
+  const bar = $('#offlineBar');
+  bar.classList.toggle('hidden', navigator.onLine);
+  bar.textContent = state.db && state.db.kind === 'supabase'
+    ? 'Sin conexión a internet. Tus datos están en la nube: no se pueden cargar ni guardar hasta que vuelva la conexión.'
+    : 'Sin conexión a internet. La app sigue funcionando con los datos guardados en este teléfono.';
+}
+
+function setupPWA() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch((err) => console.warn('SW no registrado', err));
+  }
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    installPrompt = e;
+    renderInstallState();
+  });
+  window.addEventListener('appinstalled', () => {
+    installPrompt = null;
+    renderInstallState();
+    toast('App instalada. Búscala en tu pantalla de inicio.');
+  });
+  $('#installBtn').addEventListener('click', promptInstall);
+  $('#installBtn2').addEventListener('click', promptInstall);
+  window.addEventListener('online', async () => {
+    renderOnline();
+    toast('Conexión recuperada');
+    if (state.db && state.db.kind === 'supabase') await reloadAll();
+  });
+  window.addEventListener('offline', renderOnline);
+  renderOnline();
+  renderInstallState();
+}
+
+// Accesos directos del ícono (?action=...): se ejecutan al cerrar los tips.
+function runShortcutAction() {
+  const params = new URLSearchParams(location.search);
+  const action = params.get('action');
+  if (!action) return;
+  history.replaceState(null, '', location.pathname);
+  if (action === 'comida') {
+    showView('hoy');
+    openEntryDialog();
+  } else if (action === 'habitos') {
+    showView('hoy');
+    $('#habitsCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    $('#hWeight').focus({ preventScroll: true });
+  } else if (action === 'progreso') {
+    showView('progreso');
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Inicio
 // ---------------------------------------------------------------------------
 (async function start() {
   bindEvents();
-  // Tips cada vez que se entra a la página
+  setupPWA();
+  // Tips cada vez que se entra a la página; al cerrarlos se ejecuta el acceso directo (si lo hay)
+  let dataReady;
+  const ready = new Promise((r) => { dataReady = r; });
+  $('#tipsDialog').addEventListener('close', () => ready.then(runShortcutAction), { once: true });
   $('#tipsDialog').showModal();
   await initDatabase();
   await reloadAll();
+  renderOnline();
+  dataReady();
   if (state.sb) {
     state.sb.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_IN' && state.db.kind !== 'supabase') initDatabase().then(reloadAll).then(offerMigration);

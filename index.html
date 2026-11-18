@@ -6,8 +6,15 @@
   <meta name="theme-color" content="#0a0a0a" />
   <meta name="description" content="Registra tus calorías, macros, peso y hábitos con tus propios productos." />
   <title>Contador de Calorías</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='44' fill='%23e5e5e5'/><text x='50' y='66' font-size='46' text-anchor='middle' fill='%230a0a0a' font-family='Arial' font-weight='700'>kc</text></svg>" />
-  <link rel="stylesheet" href="css/styles.css?v=6" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="alternate icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='44' fill='%23e5e5e5'/><text x='50' y='66' font-size='46' text-anchor='middle' fill='%230a0a0a' font-family='Arial' font-weight='700'>kc</text></svg>" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="apple-mobile-web-app-title" content="Calorías" />
+  <link rel="stylesheet" href="css/styles.css?v=7" />
 </head>
 <body>
   <header class="topbar">
@@ -16,6 +23,7 @@
       <h1>Contador de Calorías</h1>
     </div>
     <div class="top-actions">
+      <button class="btn primary small hidden" id="installBtn" type="button">Instalar app</button>
       <button class="icon-btn small" id="tipsBtn" type="button" title="Ver tips" aria-label="Ver tips">💡</button>
       <button class="db-badge" id="dbBadge" type="button" title="Base de datos en uso">Local</button>
     </div>
@@ -44,6 +52,7 @@
     </button>
   </nav>
 
+  <div class="offline-bar hidden" id="offlineBar" role="status"></div>
   <main>
     <!-- ============ DIARIO ============ -->
     <section class="view active" id="view-hoy" role="tabpanel">
@@ -323,6 +332,20 @@
         </details>
       </div>
 
+      <div class="card form" id="appCard">
+        <h2>App en tu teléfono</h2>
+        <p class="muted small" id="appStatus"></p>
+        <div class="row hidden" id="installRow">
+          <button class="btn primary" type="button" id="installBtn2">Instalar app</button>
+        </div>
+        <ol class="muted small install-steps" id="installSteps">
+          <li>Abre esta página en <strong>Chrome</strong> en tu Android.</li>
+          <li>Pulsa el menú <strong>⋮</strong> (arriba a la derecha).</li>
+          <li>Elige <strong>Instalar app</strong> o <strong>Agregar a pantalla principal</strong>.</li>
+        </ol>
+        <p class="muted small">Mantén pulsado el ícono de la app para ver los accesos directos: <em>Agregar comida</em>, <em>Registrar peso y pasos</em> y <em>Ver progreso</em>.</p>
+      </div>
+
       <div class="card form">
         <h2>Copia de seguridad</h2>
         <p class="muted small">Exporta o importa todos tus productos, registros, hábitos, metas y perfil en un archivo JSON.</p>
@@ -428,6 +451,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script type="module" src="js/app.js?v=6"></script>
+  <script type="module" src="js/app.js?v=7"></script>
 </body>
 </html>
