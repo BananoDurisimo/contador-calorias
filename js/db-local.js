@@ -1,6 +1,6 @@
 // Adaptador de base de datos local: IndexedDB (base de datos integrada en el navegador).
 const DB_NAME = 'contador-calorias';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 function openDB() {
   return new Promise((resolve, reject) => {
@@ -16,6 +16,10 @@ function openDB() {
       }
       if (!db.objectStoreNames.contains('kv')) {
         db.createObjectStore('kv', { keyPath: 'key' });
+      }
+      // v2: registro corporal diario (peso, cintura, pasos, sueño, agua)
+      if (!db.objectStoreNames.contains('body')) {
+        db.createObjectStore('body', { keyPath: 'date' });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -48,6 +52,7 @@ export class LocalDB {
     this.dbPromise = openDB();
   }
 
+  // ---------- Productos ----------
   async listProducts() {
     const db = await this.dbPromise;
     const all = await tx(db, 'products', 'readonly', (s) => reqP(s.getAll()));
@@ -65,6 +70,7 @@ export class LocalDB {
     await tx(db, 'products', 'readwrite', (s) => reqP(s.delete(id)));
   }
 
+  // ---------- Registros de comida ----------
   async listEntries(from, to = from) {
     const db = await this.dbPromise;
     const range = IDBKeyRange.bound(from, to);
@@ -83,22 +89,57 @@ export class LocalDB {
     await tx(db, 'entries', 'readwrite', (s) => reqP(s.delete(id)));
   }
 
-  async getGoals() {
+  // ---------- Registro corporal ----------
+  async listBody(from, to) {
     const db = await this.dbPromise;
-    const row = await tx(db, 'kv', 'readonly', (s) => reqP(s.get('goals')));
+    const range = IDBKeyRange.bound(from, to);
+    return tx(db, 'body', 'readonly', (s) => reqP(s.getAll(range)));
+  }
+
+  async getBody(date) {
+    const db = await this.dbPromise;
+    return (await tx(db, 'body', 'readonly', (s) => reqP(s.get(date)))) || null;
+  }
+
+  async saveBody(log) {
+    const db = await this.dbPromise;
+    await tx(db, 'body', 'readwrite', (s) => reqP(s.put(log)));
+    return log;
+  }
+
+  // ---------- Metas y perfil ----------
+  async getKV(key) {
+    const db = await this.dbPromise;
+    const row = await tx(db, 'kv', 'readonly', (s) => reqP(s.get(key)));
     return row ? row.value : null;
   }
 
-  async saveGoals(goals) {
+  async setKV(key, value) {
     const db = await this.dbPromise;
-    await tx(db, 'kv', 'readwrite', (s) => reqP(s.put({ key: 'goals', value: goals })));
+    await tx(db, 'kv', 'readwrite', (s) => reqP(s.put({ key, value })));
   }
 
+  getGoals() { return this.getKV('goals'); }
+  saveGoals(goals) { return this.setKV('goals', goals); }
+  getProfile() { return this.getKV('profile'); }
+  saveProfile(profile) { return this.setKV('profile', profile); }
+
+  // ---------- Copia completa ----------
   async exportAll() {
     const db = await this.dbPromise;
     const products = await tx(db, 'products', 'readonly', (s) => reqP(s.getAll()));
     const entries = await tx(db, 'entries', 'readonly', (s) => reqP(s.getAll()));
+    const body = await tx(db, 'body', 'readonly', (s) => reqP(s.getAll()));
     const goals = await this.getGoals();
-    return { products, entries, goals };
+    const profile = await this.getProfile();
+    return { products, entries, body, goals, profile };
+  }
+
+  async importAll({ products = [], entries = [], body = [], goals = null, profile = null }) {
+    for (const p of products) await this.saveProduct(p);
+    for (const e of entries) await this.saveEntry(e);
+    for (const b of body) await this.saveBody(b);
+    if (goals) await this.saveGoals(goals);
+    if (profile) await this.saveProfile(profile);
   }
 }

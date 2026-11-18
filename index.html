@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0f766e" />
-  <meta name="description" content="Registra tus calorías y macronutrientes con tus propios productos." />
+  <meta name="description" content="Registra tus calorías, macros, peso y hábitos con tus propios productos." />
   <title>Contador de Calorías</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='44' fill='%230f766e'/><text x='50' y='66' font-size='46' text-anchor='middle' fill='white' font-family='Arial' font-weight='700'>kc</text></svg>" />
-  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/styles.css?v=2" />
 </head>
 <body>
   <header class="topbar">
@@ -15,7 +15,10 @@
       <span class="logo" aria-hidden="true">kc</span>
       <h1>Contador de Calorías</h1>
     </div>
-    <button class="db-badge" id="dbBadge" type="button" title="Base de datos en uso">Local</button>
+    <div class="top-actions">
+      <button class="icon-btn small" id="tipsBtn" type="button" title="Ver tips" aria-label="Ver tips">💡</button>
+      <button class="db-badge" id="dbBadge" type="button" title="Base de datos en uso">Local</button>
+    </div>
   </header>
 
   <nav class="tabs" role="tablist">
@@ -27,9 +30,13 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7l8-4 8 4-8 4-8-4zM4 7v10l8 4 8-4V7M12 11v10"/></svg>
       <span>Productos</span>
     </button>
-    <button role="tab" class="tab" data-view="historial" aria-selected="false">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
-      <span>Historial</span>
+    <button role="tab" class="tab" data-view="progreso" aria-selected="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg>
+      <span>Progreso</span>
+    </button>
+    <button role="tab" class="tab" data-view="plan" aria-selected="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6M9 4a1 1 0 0 0-1 1v1h8V5a1 1 0 0 0-1-1M8 6H6a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-2M9 12l2 2 4-4M9 17h6"/></svg>
+      <span>Mi plan</span>
     </button>
     <button role="tab" class="tab" data-view="ajustes" aria-selected="false">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
@@ -55,11 +62,11 @@
           </svg>
           <div class="ring-center">
             <strong id="kcalConsumed">0</strong>
-            <span id="kcalGoalLabel">de 2000 kcal</span>
+            <span id="kcalGoalLabel">de 2100 kcal</span>
           </div>
         </div>
         <div class="summary-side">
-          <p class="remaining" id="kcalRemaining">Te quedan 2000 kcal</p>
+          <p class="remaining" id="kcalRemaining">Te quedan 2100 kcal</p>
           <div class="macro" data-macro="protein">
             <div class="macro-head"><span>Proteína</span><span class="macro-val">0 / 0 g</span></div>
             <div class="bar"><div class="bar-fill"></div></div>
@@ -71,6 +78,43 @@
           <div class="macro" data-macro="fat">
             <div class="macro-head"><span>Grasa</span><span class="macro-val">0 / 0 g</span></div>
             <div class="bar"><div class="bar-fill"></div></div>
+          </div>
+          <div class="macro" data-macro="fiber">
+            <div class="macro-head"><span>Fibra</span><span class="macro-val">0 / 0 g</span></div>
+            <div class="bar"><div class="bar-fill"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card habits" id="habitsCard">
+        <div class="meal-head">
+          <h3>Hábitos del día</h3>
+          <small class="muted" id="habitsStatus"></small>
+        </div>
+        <div class="habits-grid">
+          <label>Peso en ayunas (kg)
+            <input type="number" id="hWeight" min="20" max="400" step="0.1" inputmode="decimal" placeholder="—" />
+          </label>
+          <label>Pasos
+            <input type="number" id="hSteps" min="0" max="100000" step="1" inputmode="numeric" placeholder="—" />
+            <span class="hint" id="hStepsHint"></span>
+          </label>
+          <label>Sueño anoche (h)
+            <input type="number" id="hSleep" min="0" max="24" step="0.25" inputmode="decimal" placeholder="—" />
+            <span class="hint" id="hSleepHint"></span>
+          </label>
+          <label>Cintura (cm)
+            <input type="number" id="hWaist" min="30" max="250" step="0.5" inputmode="decimal" placeholder="—" />
+            <span class="hint" id="hWaistHint"></span>
+          </label>
+        </div>
+        <div class="water">
+          <div class="macro-head"><span>Agua</span><span class="macro-val" id="waterVal">0 / 0 ml</span></div>
+          <div class="bar water-bar"><div class="bar-fill" id="waterFill"></div></div>
+          <div class="row">
+            <button class="btn ghost small" type="button" data-water="-250">− 250 ml</button>
+            <button class="btn ghost small" type="button" data-water="250">+ 250 ml</button>
+            <button class="btn ghost small" type="button" data-water="500">+ 500 ml</button>
           </div>
         </div>
       </div>
@@ -87,24 +131,127 @@
       <div id="productList" class="product-list"></div>
     </section>
 
-    <!-- ============ HISTORIAL ============ -->
-    <section class="view" id="view-historial" role="tabpanel">
-      <div class="toolbar">
-        <div class="seg" role="group" aria-label="Rango">
-          <button class="seg-btn active" data-range="7" type="button">7 días</button>
-          <button class="seg-btn" data-range="30" type="button">30 días</button>
+    <!-- ============ PROGRESO ============ -->
+    <section class="view" id="view-progreso" role="tabpanel">
+      <div class="card rec" id="recCard"></div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Peso</h2>
+          <div class="seg" role="group" aria-label="Rango de peso">
+            <button class="seg-btn active" data-wrange="30" type="button">30 d</button>
+            <button class="seg-btn" data-wrange="60" type="button">60 d</button>
+            <button class="seg-btn" data-wrange="90" type="button">90 d</button>
+          </div>
+        </div>
+        <div id="weightChart" class="chart"></div>
+        <p class="muted small legend"><span class="dot dot-daily"></span> peso diario <span class="dot dot-avg"></span> promedio de 7 días</p>
+      </div>
+
+      <div class="card">
+        <h2>Resumen semanal</h2>
+        <div class="table-wrap">
+          <table class="table" id="weeksTable">
+            <thead><tr><th>Semana</th><th>Peso prom.</th><th>Cambio</th><th>Cintura</th><th>kcal prom.</th><th>Pasos</th><th>Sueño</th></tr></thead>
+            <tbody></tbody>
+          </table>
         </div>
       </div>
+
       <div class="card">
+        <div class="card-head">
+          <h2>Calorías</h2>
+          <div class="seg" role="group" aria-label="Rango de calorías">
+            <button class="seg-btn active" data-range="7" type="button">7 días</button>
+            <button class="seg-btn" data-range="30" type="button">30 días</button>
+          </div>
+        </div>
         <div class="stats" id="historyStats"></div>
         <div id="chart" class="chart"></div>
       </div>
       <div class="card">
-        <table class="table" id="historyTable">
-          <thead><tr><th>Fecha</th><th>kcal</th><th>Prot.</th><th>Carb.</th><th>Grasa</th></tr></thead>
-          <tbody></tbody>
-        </table>
+        <div class="table-wrap">
+          <table class="table" id="historyTable">
+            <thead><tr><th>Fecha</th><th>kcal</th><th>Prot.</th><th>Carb.</th><th>Grasa</th><th>Fibra</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
+    </section>
+
+    <!-- ============ MI PLAN ============ -->
+    <section class="view" id="view-plan" role="tabpanel">
+      <div class="card plan-hero">
+        <h2>Mi plan: perder grasa y ganar músculo</h2>
+        <p class="muted">Calculado con tus datos. Si cambia tu peso o tu rutina, actualiza el perfil y el plan se recalcula.</p>
+      </div>
+
+      <form class="card form" id="profileForm">
+        <h2>Mi perfil</h2>
+        <p class="muted small">Estos datos se guardan en tu base de datos, no en el código público de la página.</p>
+        <div class="grid-4">
+          <label>Sexo
+            <select name="sex"><option value="m">Hombre</option><option value="f">Mujer</option></select>
+          </label>
+          <label>Edad<input type="number" name="age" min="12" max="100" step="1" required /></label>
+          <label>Estatura (cm)<input type="number" name="height" min="100" max="250" step="0.5" required /></label>
+          <label>Peso (kg)<input type="number" name="weight" min="30" max="400" step="0.1" required /></label>
+          <label>Cintura (cm)<input type="number" name="waist" min="40" max="250" step="0.5" /></label>
+          <label>Días de gym / semana<input type="number" name="gym_days" min="0" max="7" step="0.5" required /></label>
+          <label>Horas por sesión<input type="number" name="session_h" min="0" max="5" step="0.25" required /></label>
+          <label>Km caminados por día de gym<input type="number" name="walk_km" min="0" max="50" step="0.1" required /></label>
+        </div>
+        <div class="row">
+          <button class="btn primary" type="submit">Guardar y recalcular</button>
+          <button class="btn ghost" type="button" id="useLastWeight">Usar mi último peso registrado</button>
+        </div>
+      </form>
+
+      <div id="planResult"></div>
+
+      <div class="card prose">
+        <h2>Cómo ajustar</h2>
+        <ul>
+          <li><strong>Pésate</strong> todas las mañanas, después de ir al baño y en ayunas. Usa el <strong>promedio de la semana</strong>, no el número de cada día. Regístralo en <em>Hábitos del día</em>.</li>
+          <li><strong>Mide tu cintura</strong> una vez por semana, a la altura del ombligo.</li>
+          <li><strong>Si en 2 o 3 semanas el promedio no baja:</strong> resta 150 kcal, quitándolas de carbohidratos o grasa.</li>
+          <li><strong>Si bajas más de 1,2 kg por semana o te sientes sin fuerza:</strong> suma 150 kcal.</li>
+        </ul>
+        <p class="muted small">La pestaña <em>Progreso</em> revisa estas reglas con tus pesos y te propone el ajuste.</p>
+      </div>
+
+      <div class="card prose">
+        <h2>Lo que más va a influir en tus resultados</h2>
+        <ol>
+          <li><strong>Pasar 8 a 12 horas sentado.</strong> Es lo más importante y probablemente explica los 5 a 10 kg que subiste este año. Levántate y camina 3 a 5 minutos cada hora que juegues, por ejemplo entre partidas. La meta es llegar a 8.000 a 10.000 pasos al día. Esto puede quemar 200 a 400 kcal diarias más sin cambiar lo que comes.</li>
+          <li><strong>Dormir poco.</strong> Dormir 6 horas y despertarte cansado da más hambre y hace que pierdas más músculo durante un déficit. Intenta dormir al menos 7 horas. Las noches en que madrugas, corta el PC más temprano.</li>
+          <li><strong>Repartir la proteína.</strong> Con tus 4 comidas, procura comer 40 a 50 g de proteína en cada una. Que cenes después de las 10 no es un problema; lo que cuenta es el total del día.</li>
+          <li><strong>Pesas.</strong> Intenta subir peso o repeticiones poco a poco. Eso le indica a tu cuerpo que conserve y construya músculo mientras pierdes grasa.</li>
+          <li><strong>Bebidas.</strong> El Mr Tea cero no aporta calorías, así que puedes seguir tomándolo. El alcohol una vez al mes no es un problema.</li>
+        </ol>
+      </div>
+
+      <div class="card prose">
+        <h2>Tus comidas</h2>
+        <ul>
+          <li><strong>Primera comida</strong> · 10 a 12 am</li>
+          <li><strong>Almuerzo</strong> · 3 a 5 pm</li>
+          <li><strong>Media tarde</strong> · 6 a 8 pm (opcional)</li>
+          <li><strong>Cena</strong> · desde las 10 pm</li>
+        </ul>
+        <p class="muted small">En el diario cada comida muestra su proteína: busca 40 a 50 g en cada una.</p>
+      </div>
+
+      <div class="card prose">
+        <h2>Proteína barata para tu presupuesto</h2>
+        <ul>
+          <li><strong>Animal:</strong> huevos, pechuga o pernil de pollo sin piel, atún en lata en agua, carne molida magra, queso campesino, leche descremada, kumis o yogur sin azúcar e hígado.</li>
+          <li><strong>Vegetal:</strong> lentejas y fríjoles. Aportan proteína y fibra, aunque la mayoría de sus calorías vienen de los carbohidratos.</li>
+        </ul>
+        <p class="muted small">Cuando crees estos alimentos en <em>Productos</em>, toma los valores de la etiqueta de cada uno.</p>
+      </div>
+
+      <p class="muted small disclaimer">Es una estimación con fórmulas estándar (Mifflin-St Jeor y RFM). Lo que de verdad la valida es cómo evoluciona tu peso en las próximas 3 semanas. Si aparece alguna condición médica, consulta a un nutricionista o a tu médico.</p>
     </section>
 
     <!-- ============ AJUSTES ============ -->
@@ -116,7 +263,12 @@
           <label>Proteína (g)<input type="number" name="protein" min="0" step="0.1" /></label>
           <label>Carbohidratos (g)<input type="number" name="carbs" min="0" step="0.1" /></label>
           <label>Grasa (g)<input type="number" name="fat" min="0" step="0.1" /></label>
+          <label>Fibra (g)<input type="number" name="fiber" min="0" step="1" /></label>
+          <label>Agua (ml)<input type="number" name="water_ml" min="0" step="50" /></label>
+          <label>Pasos<input type="number" name="steps" min="0" step="100" /></label>
+          <label>Sueño (h)<input type="number" name="sleep_h" min="0" max="24" step="0.25" /></label>
         </div>
+        <p class="muted small" id="goalsCheck"></p>
         <button class="btn primary" type="submit">Guardar metas</button>
       </form>
 
@@ -165,7 +317,7 @@
 
       <div class="card form">
         <h2>Copia de seguridad</h2>
-        <p class="muted small">Exporta o importa todos tus productos, registros y metas en un archivo JSON.</p>
+        <p class="muted small">Exporta o importa todos tus productos, registros, hábitos, metas y perfil en un archivo JSON.</p>
         <div class="row">
           <button class="btn ghost" type="button" id="exportBtn">Exportar JSON</button>
           <label class="btn ghost file-btn">Importar JSON<input type="file" id="importFile" accept="application/json,.json" hidden /></label>
@@ -174,12 +326,40 @@
     </section>
   </main>
 
+  <!-- ============ DIÁLOGO TIPS (se abre al entrar) ============ -->
+  <dialog id="tipsDialog" class="tips">
+    <div class="form">
+      <h2>Tips para hoy</h2>
+      <div class="tips-block">
+        <h3>Seguimiento</h3>
+        <ul>
+          <li><strong>Pésate:</strong> todas las mañanas, después de ir al baño y en ayunas. Usa el promedio de la semana, no el número de cada día.</li>
+          <li><strong>Mide tu cintura:</strong> una vez por semana, a la altura del ombligo.</li>
+          <li><strong>Si en 2 o 3 semanas el promedio no baja:</strong> resta 150 kcal, quitándolas de carbohidratos o grasa.</li>
+          <li><strong>Si bajas más de 1,2 kg por semana o te sientes sin fuerza:</strong> suma 150 kcal.</li>
+        </ul>
+      </div>
+      <div class="tips-block">
+        <h3>Lo más importante</h3>
+        <ol>
+          <li><strong>Pasar 8 a 12 horas sentado.</strong> Es lo más importante y probablemente explica los 5 a 10 kg que subiste este año. Levántate y camina 3 a 5 minutos cada hora que juegues, por ejemplo entre partidas. La meta es llegar a 8.000 a 10.000 pasos al día. Esto puede quemar 200 a 400 kcal diarias más sin cambiar lo que comes.</li>
+          <li><strong>Dormir poco.</strong> Dormir 6 horas y despertarte cansado da más hambre y hace que pierdas más músculo durante un déficit. Intenta dormir al menos 7 horas. Las noches en que madrugas, corta el PC más temprano.</li>
+          <li><strong>Repartir la proteína.</strong> Con tus 4 comidas, procura comer 40 a 50 g de proteína en cada una. Que cenes después de las 10 no es un problema; lo que cuenta es el total del día.</li>
+        </ol>
+      </div>
+      <div class="row end">
+        <button class="btn ghost" type="button" data-goto-plan>Ver mi plan completo</button>
+        <button class="btn primary" type="button" data-close>Entendido</button>
+      </div>
+    </div>
+  </dialog>
+
   <!-- ============ DIÁLOGO PRODUCTO ============ -->
   <dialog id="productDialog">
     <form method="dialog" id="productForm" class="form">
       <h2 id="productDialogTitle">Nuevo producto</h2>
       <input type="hidden" name="id" />
-      <label>Nombre *<input type="text" name="name" required maxlength="120" placeholder="Ej. Arepa de maíz" /></label>
+      <label>Nombre *<input type="text" name="name" required maxlength="120" placeholder="Ej. Pechuga de pollo" /></label>
       <label>Marca (opcional)<input type="text" name="brand" maxlength="80" /></label>
 
       <fieldset>
@@ -193,7 +373,7 @@
               <option value="unit">unidad / porción</option>
             </select>
           </label>
-          <label class="unit-label-field hidden">Nombre de la porción<input type="text" name="unit_label" maxlength="30" placeholder="Ej. rebanada" /></label>
+          <label class="unit-label-field hidden">Nombre de la porción<input type="text" name="unit_label" maxlength="30" placeholder="Ej. huevo" /></label>
         </div>
       </fieldset>
 
@@ -227,12 +407,7 @@
       <div class="grid-2">
         <label>Cantidad<span class="input-unit"><input type="number" name="amount" min="0.01" step="any" required /><span id="amountUnit">g</span></span></label>
         <label>Comida
-          <select name="meal">
-            <option value="desayuno">Desayuno</option>
-            <option value="almuerzo">Almuerzo</option>
-            <option value="cena">Cena</option>
-            <option value="snack">Snacks</option>
-          </select>
+          <select name="meal" id="mealSelect"></select>
         </label>
       </div>
       <div class="preview" id="entryPreview"></div>
@@ -245,6 +420,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/app.js?v=2"></script>
 </body>
 </html>

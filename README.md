@@ -8,8 +8,12 @@ Aplicación web para registrar las calorías y macronutrientes que consumes cada
 
 - **Productos personalizados**: nombre, marca y valores por 100 g, 100 ml o por unidad/porción (kcal, proteína, carbohidratos, grasa, fibra y azúcar).
 - **Diario** por comidas (desayuno, almuerzo, cena, snacks) con cálculo automático según la cantidad consumida.
-- **Metas diarias** de calorías y macros con anillo de progreso.
+- **Metas diarias** de calorías, macros, fibra, agua, pasos y sueño, con proteína por comida.
 - **Historial** de 7 o 30 días con gráfico y tabla.
+- **Hábitos del día**: peso en ayunas, pasos, horas de sueño, agua y cintura (semanal).
+- **Progreso**: peso diario con promedio de 7 días, resumen semanal y recomendación automática de ajuste (±150 kcal).
+- **Mi plan**: calorías y macros calculados desde tu perfil (Mifflin-St Jeor, RFM), con las pautas del plan.
+- **Tips al entrar**: recordatorio de las reglas de seguimiento cada vez que abres la app.
 - **Copia de seguridad** en JSON (exportar / importar).
 
 ## Base de datos
