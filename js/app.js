@@ -1,6 +1,6 @@
-import { LocalDB } from './db-local.js?v=4';
-import { SupabaseDB, getSupabaseClient } from './db-supabase.js?v=4';
-import { calcPlan, weeklyAnalysis } from './plan.js?v=4';
+import { LocalDB } from './db-local.js?v=5';
+import { SupabaseDB, getSupabaseClient } from './db-supabase.js?v=5';
+import { calcPlan, weeklyAnalysis } from './plan.js?v=5';
 
 // ---------------------------------------------------------------------------
 // Utilidades
@@ -331,7 +331,8 @@ async function renderHabits() {
 
   const steps = num(b.steps);
   const sh = $('#hStepsHint');
-  sh.textContent = steps ? (steps >= g.steps ? '✓ meta cumplida' : `faltan ${fmt(g.steps - steps)}`) : `meta ${fmt(g.steps)}`;
+  const kmTxt = steps ? ` · ≈ ${fmt(steps / stepsPerKm(), 1)} km` : '';
+  sh.textContent = (steps ? (steps >= g.steps ? '✓ meta cumplida' : `faltan ${fmt(g.steps - steps)}`) : `meta ${fmt(g.steps)}`) + kmTxt;
   sh.className = `hint ${steps >= g.steps ? 'ok' : steps ? 'warn' : ''}`;
 
   const sleep = num(b.sleep_h);
@@ -360,6 +361,31 @@ async function renderHabits() {
       wh.className = `hint ${days >= 7 ? 'warn' : ''}`;
     }
   }
+}
+
+// Pasos por kilómetro según la longitud de zancada estimada (≈ 41,5 % de la estatura en hombres, 41,3 % en mujeres).
+function stepsPerKm() {
+  const p = state.profile;
+  const h = p && num(p.height) > 0 ? num(p.height) : 175;
+  const stride = h * (p && p.sex === 'f' ? 0.413 : 0.415); // cm por paso
+  return 100000 / stride;
+}
+
+async function addKm() {
+  const input = $('#hKm');
+  const km = num(input.value);
+  if (km <= 0) {
+    toast('Escribe cuántos km caminaste', true);
+    input.focus();
+    return;
+  }
+  const added = Math.round(km * stepsPerKm());
+  const total = Math.round(num($('#hSteps').value)) + added;
+  $('#hSteps').value = total;
+  input.value = '';
+  clearTimeout(habitsTimer);
+  await saveHabits();
+  toast(`+${fmt(km, 2)} km = ${fmt(added)} pasos (total ${fmt(total)})`);
 }
 
 let habitsTimer;
@@ -1089,6 +1115,8 @@ function bindEvents() {
 
   // Hábitos
   ['#hWeight', '#hSteps', '#hSleep', '#hWaist'].forEach((id) => $(id).addEventListener('input', queueHabitsSave));
+  $('#addKmBtn').addEventListener('click', addKm);
+  $('#hKm').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addKm(); } });
 
   // Delegación global de clics
   document.addEventListener('click', (e) => {

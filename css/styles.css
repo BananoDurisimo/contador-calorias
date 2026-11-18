@@ -325,3 +325,7 @@ dialog.tips { width: min(640px, calc(100vw - 24px)); }
 .preview div:nth-child(2) strong { color: var(--protein); }
 .preview div:nth-child(3) strong { color: var(--carbs); }
 .preview div:nth-child(4) strong { color: var(--fat); }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.km-add { display: flex; gap: 6px; }
+.km-add input { flex: 1; min-width: 0; padding: 7px 9px; }
+.km-add .btn { white-space: nowrap; padding: 6px 10px; }
