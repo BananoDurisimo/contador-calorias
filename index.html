@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f766e" />
+  <meta name="description" content="Registra tus calorías y macronutrientes con tus propios productos." />
+  <title>Contador de Calorías</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='44' fill='%230f766e'/><text x='50' y='66' font-size='46' text-anchor='middle' fill='white' font-family='Arial' font-weight='700'>kc</text></svg>" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">kc</span>
+      <h1>Contador de Calorías</h1>
+    </div>
+    <button class="db-badge" id="dbBadge" type="button" title="Base de datos en uso">Local</button>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" class="tab active" data-view="hoy" aria-selected="true">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v3M17 3v3M4 9h16M5 6h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z"/></svg>
+      <span>Diario</span>
+    </button>
+    <button role="tab" class="tab" data-view="productos" aria-selected="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7l8-4 8 4-8 4-8-4zM4 7v10l8 4 8-4V7M12 11v10"/></svg>
+      <span>Productos</span>
+    </button>
+    <button role="tab" class="tab" data-view="historial" aria-selected="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+      <span>Historial</span>
+    </button>
+    <button role="tab" class="tab" data-view="ajustes" aria-selected="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      <span>Ajustes</span>
+    </button>
+  </nav>
+
+  <main>
+    <!-- ============ DIARIO ============ -->
+    <section class="view active" id="view-hoy" role="tabpanel">
+      <div class="date-nav">
+        <button class="icon-btn" id="prevDay" type="button" aria-label="Día anterior">‹</button>
+        <input type="date" id="dateInput" aria-label="Fecha" />
+        <button class="icon-btn" id="nextDay" type="button" aria-label="Día siguiente">›</button>
+        <button class="btn ghost small" id="todayBtn" type="button">Hoy</button>
+      </div>
+
+      <div class="card summary">
+        <div class="ring-wrap">
+          <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="ring-bg" cx="60" cy="60" r="52" />
+            <circle class="ring-fg" id="ringFg" cx="60" cy="60" r="52" />
+          </svg>
+          <div class="ring-center">
+            <strong id="kcalConsumed">0</strong>
+            <span id="kcalGoalLabel">de 2000 kcal</span>
+          </div>
+        </div>
+        <div class="summary-side">
+          <p class="remaining" id="kcalRemaining">Te quedan 2000 kcal</p>
+          <div class="macro" data-macro="protein">
+            <div class="macro-head"><span>Proteína</span><span class="macro-val">0 / 0 g</span></div>
+            <div class="bar"><div class="bar-fill"></div></div>
+          </div>
+          <div class="macro" data-macro="carbs">
+            <div class="macro-head"><span>Carbohidratos</span><span class="macro-val">0 / 0 g</span></div>
+            <div class="bar"><div class="bar-fill"></div></div>
+          </div>
+          <div class="macro" data-macro="fat">
+            <div class="macro-head"><span>Grasa</span><span class="macro-val">0 / 0 g</span></div>
+            <div class="bar"><div class="bar-fill"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="meals"></div>
+    </section>
+
+    <!-- ============ PRODUCTOS ============ -->
+    <section class="view" id="view-productos" role="tabpanel">
+      <div class="toolbar">
+        <input type="search" id="productSearch" placeholder="Buscar producto…" aria-label="Buscar producto" />
+        <button class="btn primary" id="newProductBtn" type="button">+ Nuevo producto</button>
+      </div>
+      <div id="productList" class="product-list"></div>
+    </section>
+
+    <!-- ============ HISTORIAL ============ -->
+    <section class="view" id="view-historial" role="tabpanel">
+      <div class="toolbar">
+        <div class="seg" role="group" aria-label="Rango">
+          <button class="seg-btn active" data-range="7" type="button">7 días</button>
+          <button class="seg-btn" data-range="30" type="button">30 días</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="stats" id="historyStats"></div>
+        <div id="chart" class="chart"></div>
+      </div>
+      <div class="card">
+        <table class="table" id="historyTable">
+          <thead><tr><th>Fecha</th><th>kcal</th><th>Prot.</th><th>Carb.</th><th>Grasa</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ AJUSTES ============ -->
+    <section class="view" id="view-ajustes" role="tabpanel">
+      <form class="card form" id="goalsForm">
+        <h2>Metas diarias</h2>
+        <div class="grid-4">
+          <label>Calorías (kcal)<input type="number" name="kcal" min="0" step="1" required /></label>
+          <label>Proteína (g)<input type="number" name="protein" min="0" step="0.1" /></label>
+          <label>Carbohidratos (g)<input type="number" name="carbs" min="0" step="0.1" /></label>
+          <label>Grasa (g)<input type="number" name="fat" min="0" step="0.1" /></label>
+        </div>
+        <button class="btn primary" type="submit">Guardar metas</button>
+      </form>
+
+      <div class="card form">
+        <h2>Base de datos</h2>
+        <p class="muted" id="dbStatusText"></p>
+
+        <details id="supabaseDetails">
+          <summary>Sincronizar en la nube con Supabase</summary>
+          <p class="muted small">
+            Crea un proyecto gratuito en supabase.com, ejecuta el archivo
+            <code>supabase/schema.sql</code> del repositorio en el SQL Editor y pega aquí
+            la <em>Project URL</em> y la clave <em>anon / publishable</em>
+            (Project Settings → API). La clave anon es pública por diseño: tus datos los
+            protege el inicio de sesión y las políticas de seguridad por usuario.
+          </p>
+          <form id="supabaseForm" class="stack">
+            <label>Project URL<input type="url" name="url" placeholder="https://xxxx.supabase.co" required /></label>
+            <label>Clave anon / publishable<input type="text" name="key" placeholder="eyJhbGciOi… o sb_publishable_…" required autocomplete="off" /></label>
+            <div class="row">
+              <button class="btn primary" type="submit">Guardar conexión</button>
+              <button class="btn ghost" type="button" id="supabaseForget">Quitar conexión</button>
+            </div>
+          </form>
+
+          <div id="authBox" class="stack hidden">
+            <h3>Cuenta</h3>
+            <div id="authLoggedOut" class="stack">
+              <label>Correo<input type="email" id="authEmail" autocomplete="email" /></label>
+              <label>Contraseña<input type="password" id="authPass" autocomplete="current-password" minlength="6" /></label>
+              <div class="row">
+                <button class="btn primary" type="button" id="loginBtn">Iniciar sesión</button>
+                <button class="btn ghost" type="button" id="signupBtn">Crear cuenta</button>
+              </div>
+            </div>
+            <div id="authLoggedIn" class="stack hidden">
+              <p>Sesión iniciada como <strong id="authUser"></strong>.</p>
+              <div class="row">
+                <button class="btn ghost" type="button" id="migrateBtn">Copiar datos locales a la nube</button>
+                <button class="btn danger" type="button" id="logoutBtn">Cerrar sesión</button>
+              </div>
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <div class="card form">
+        <h2>Copia de seguridad</h2>
+        <p class="muted small">Exporta o importa todos tus productos, registros y metas en un archivo JSON.</p>
+        <div class="row">
+          <button class="btn ghost" type="button" id="exportBtn">Exportar JSON</button>
+          <label class="btn ghost file-btn">Importar JSON<input type="file" id="importFile" accept="application/json,.json" hidden /></label>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ DIÁLOGO PRODUCTO ============ -->
+  <dialog id="productDialog">
+    <form method="dialog" id="productForm" class="form">
+      <h2 id="productDialogTitle">Nuevo producto</h2>
+      <input type="hidden" name="id" />
+      <label>Nombre *<input type="text" name="name" required maxlength="120" placeholder="Ej. Arepa de maíz" /></label>
+      <label>Marca (opcional)<input type="text" name="brand" maxlength="80" /></label>
+
+      <fieldset>
+        <legend>Valores nutricionales por…</legend>
+        <div class="grid-3">
+          <label>Cantidad<input type="number" name="base_amount" min="0.01" step="any" required value="100" /></label>
+          <label>Unidad
+            <select name="base_type">
+              <option value="g">gramos (g)</option>
+              <option value="ml">mililitros (ml)</option>
+              <option value="unit">unidad / porción</option>
+            </select>
+          </label>
+          <label class="unit-label-field hidden">Nombre de la porción<input type="text" name="unit_label" maxlength="30" placeholder="Ej. rebanada" /></label>
+        </div>
+      </fieldset>
+
+      <div class="grid-3">
+        <label>Calorías (kcal) *<input type="number" name="kcal" min="0" step="any" required /></label>
+        <label>Proteína (g)<input type="number" name="protein" min="0" step="any" value="0" /></label>
+        <label>Carbohidratos (g)<input type="number" name="carbs" min="0" step="any" value="0" /></label>
+        <label>Grasa (g)<input type="number" name="fat" min="0" step="any" value="0" /></label>
+        <label>Fibra (g)<input type="number" name="fiber" min="0" step="any" /></label>
+        <label>Azúcar (g)<input type="number" name="sugar" min="0" step="any" /></label>
+      </div>
+      <p class="muted small" id="macroHint"></p>
+
+      <div class="row end">
+        <button class="btn ghost" value="cancel" type="button" data-close>Cancelar</button>
+        <button class="btn primary" type="submit">Guardar producto</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ============ DIÁLOGO REGISTRO ============ -->
+  <dialog id="entryDialog">
+    <form method="dialog" id="entryForm" class="form">
+      <h2 id="entryDialogTitle">Agregar alimento</h2>
+      <input type="hidden" name="id" />
+      <div id="productPicker" class="stack">
+        <input type="search" id="pickerSearch" placeholder="Buscar en mis productos…" aria-label="Buscar en mis productos" />
+        <div id="pickerList" class="picker-list" role="listbox"></div>
+      </div>
+      <div id="selectedProduct" class="selected hidden"></div>
+      <div class="grid-2">
+        <label>Cantidad<span class="input-unit"><input type="number" name="amount" min="0.01" step="any" required /><span id="amountUnit">g</span></span></label>
+        <label>Comida
+          <select name="meal">
+            <option value="desayuno">Desayuno</option>
+            <option value="almuerzo">Almuerzo</option>
+            <option value="cena">Cena</option>
+            <option value="snack">Snacks</option>
+          </select>
+        </label>
+      </div>
+      <div class="preview" id="entryPreview"></div>
+      <div class="row end">
+        <button class="btn ghost" type="button" data-close>Cancelar</button>
+        <button class="btn primary" type="submit" id="entrySubmit">Agregar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
