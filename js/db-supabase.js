@@ -4,8 +4,8 @@ const SUPABASE_CDN = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
 
 const PRODUCT_COLS = 'id,name,brand,base_type,base_amount,unit_label,kcal,protein,carbs,fat,fiber,sugar,created_at,updated_at';
 const ENTRY_COLS = 'id,date,meal,product_id,product_name,amount,unit,kcal,protein,carbs,fat,fiber,created_at';
-const BODY_COLS = 'date,weight,waist,steps,sleep_h,water_ml';
-const GOAL_COLS = 'kcal,protein,carbs,fat,fiber,water_ml,steps,sleep_h';
+const BODY_COLS = 'date,weight,waist,steps,sleep_h,water_ml,meals,workouts';
+const GOAL_COLS = 'kcal,protein,carbs,fat,fiber,water_ml,steps,sleep_h,burn';
 
 let clientCache = null;
 

@@ -9,6 +9,8 @@ Aplicación web para registrar las calorías y macronutrientes que consumes cada
 - **Productos personalizados**: nombre, marca y valores por 100 g, 100 ml o por unidad/porción (kcal, proteína, carbohidratos, grasa, fibra y azúcar).
 - **Diario** por comidas (desayuno, almuerzo, cena, snacks) con cálculo automático según la cantidad consumida.
 - **Metas diarias** de calorías, macros, fibra, agua, pasos y sueño, con proteína por comida.
+- **Comidas flexibles**: 3 comidas de base (desayuno, almuerzo, cena); cada día se pueden agregar, renombrar o quitar (moviendo sus alimentos).
+- **Calorías por quemar**: meta diaria de actividad que se descuenta con los pasos y los entrenamientos (pesas de torso, pierna, cuerpo completo o cardio, estimados con valores MET).
 - **Historial** de 7 o 30 días con gráfico y tabla.
 - **Hábitos del día**: peso en ayunas, pasos, horas de sueño, agua y cintura (semanal).
 - **Progreso**: peso diario con promedio de 7 días, resumen semanal y recomendación automática de ajuste (±150 kcal).

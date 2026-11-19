@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   <meta name="apple-mobile-web-app-title" content="Calorías" />
-  <link rel="stylesheet" href="css/styles.css?v=7" />
+  <link rel="stylesheet" href="css/styles.css?v=8" />
 </head>
 <body>
   <header class="topbar">
@@ -99,6 +99,31 @@
         </div>
       </div>
 
+      <div class="card activity" id="activityCard">
+        <div class="meal-head">
+          <h3>Calorías por quemar</h3>
+          <button class="link-btn" type="button" id="addWorkoutBtn">+ Entrenamiento</button>
+        </div>
+        <div class="burn-top">
+          <strong id="burnLeft">0</strong>
+          <span id="burnLabel">kcal por quemar</span>
+        </div>
+        <div class="bar burn-bar"><div class="bar-fill" id="burnFill"></div></div>
+        <p class="muted small burn-breakdown" id="burnBreakdown"></p>
+        <div id="workoutList" class="workout-list"></div>
+        <div class="field steps-field">
+          <label for="hSteps">Pasos</label>
+          <div class="steps-row">
+            <input type="number" id="hSteps" min="0" max="200000" step="1" inputmode="numeric" placeholder="Pasos de hoy" />
+            <div class="km-add">
+              <input type="number" id="hKm" min="0" max="100" step="0.1" inputmode="decimal" placeholder="km" aria-label="Kilómetros caminados" />
+              <button class="btn ghost small" type="button" id="addKmBtn">+ Sumar km</button>
+            </div>
+          </div>
+          <span class="hint" id="hStepsHint"></span>
+        </div>
+      </div>
+
       <div class="card habits" id="habitsCard">
         <div class="meal-head">
           <h3>Hábitos del día</h3>
@@ -108,15 +133,6 @@
           <label>Peso en ayunas (kg)
             <input type="number" id="hWeight" min="20" max="400" step="0.1" inputmode="decimal" placeholder="—" />
           </label>
-          <div class="field">
-            <label for="hSteps">Pasos</label>
-            <input type="number" id="hSteps" min="0" max="200000" step="1" inputmode="numeric" placeholder="—" />
-            <div class="km-add">
-              <input type="number" id="hKm" min="0" max="100" step="0.1" inputmode="decimal" placeholder="km" aria-label="Kilómetros caminados" />
-              <button class="btn ghost small" type="button" id="addKmBtn">+ Sumar km</button>
-            </div>
-            <span class="hint" id="hStepsHint"></span>
-          </div>
           <label>Sueño anoche (h)
             <input type="number" id="hSleep" min="0" max="24" step="0.25" inputmode="decimal" placeholder="—" />
             <span class="hint" id="hSleepHint"></span>
@@ -170,7 +186,7 @@
         <h2>Resumen semanal</h2>
         <div class="table-wrap">
           <table class="table" id="weeksTable">
-            <thead><tr><th>Semana</th><th>Peso prom.</th><th>Cambio</th><th>Cintura</th><th>kcal prom.</th><th>Pasos</th><th>Sueño</th></tr></thead>
+            <thead><tr><th>Semana</th><th>Peso prom.</th><th>Cambio</th><th>Cintura</th><th>kcal prom.</th><th>Pasos</th><th>Quemadas</th><th>Sueño</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -243,7 +259,7 @@
         <ol>
           <li><strong>Pasar 8 a 12 horas sentado.</strong> Es lo más importante y probablemente explica los 5 a 10 kg que subiste este año. Levántate y camina 3 a 5 minutos cada hora que juegues, por ejemplo entre partidas. La meta es llegar a 8.000 a 10.000 pasos al día. Esto puede quemar 200 a 400 kcal diarias más sin cambiar lo que comes.</li>
           <li><strong>Dormir poco.</strong> Dormir 6 horas y despertarte cansado da más hambre y hace que pierdas más músculo durante un déficit. Intenta dormir al menos 7 horas. Las noches en que madrugas, corta el PC más temprano.</li>
-          <li><strong>Repartir la proteína.</strong> Con tus 4 comidas, procura comer 40 a 50 g de proteína en cada una. Que cenes después de las 10 no es un problema; lo que cuenta es el total del día.</li>
+          <li><strong>Repartir la proteína.</strong> Divide tus 180 g entre las comidas del día: con 3 comidas son unos 60 g en cada una; con 4, unos 45 g. Que cenes después de las 10 no es un problema; lo que cuenta es el total del día.</li>
           <li><strong>Pesas.</strong> Intenta subir peso o repeticiones poco a poco. Eso le indica a tu cuerpo que conserve y construya músculo mientras pierdes grasa.</li>
           <li><strong>Bebidas.</strong> El Mr Tea cero no aporta calorías, así que puedes seguir tomándolo. El alcohol una vez al mes no es un problema.</li>
         </ol>
@@ -252,12 +268,11 @@
       <div class="card prose">
         <h2>Tus comidas</h2>
         <ul>
-          <li><strong>Primera comida</strong> · 10 a 12 am</li>
+          <li><strong>Desayuno</strong> · 10 a 12 am</li>
           <li><strong>Almuerzo</strong> · 3 a 5 pm</li>
-          <li><strong>Media tarde</strong> · 6 a 8 pm (opcional)</li>
           <li><strong>Cena</strong> · desde las 10 pm</li>
         </ul>
-        <p class="muted small">En el diario cada comida muestra su proteína: busca 40 a 50 g en cada una.</p>
+        <p class="muted small">Son la base de cada día. Con <em>+ Agregar comida</em> sumas otra (por ejemplo, media tarde) y con <em>⋯</em> renombras o quitas una; si juntas desayuno y almuerzo, quita una y mueve sus alimentos a la otra. La meta de proteína de cada comida se ajusta según cuántas tengas ese día.</p>
       </div>
 
       <div class="card prose">
@@ -285,6 +300,7 @@
           <label>Agua (ml)<input type="number" name="water_ml" min="0" step="50" /></label>
           <label>Pasos<input type="number" name="steps" min="0" step="100" /></label>
           <label>Sueño (h)<input type="number" name="sleep_h" min="0" max="24" step="0.25" /></label>
+          <label>Por quemar (kcal)<input type="number" name="burn" min="0" step="10" /></label>
         </div>
         <p class="muted small" id="goalsCheck"></p>
         <button class="btn primary" type="submit">Guardar metas</button>
@@ -375,7 +391,7 @@
         <ol>
           <li><strong>Pasar 8 a 12 horas sentado.</strong> Es lo más importante y probablemente explica los 5 a 10 kg que subiste este año. Levántate y camina 3 a 5 minutos cada hora que juegues, por ejemplo entre partidas. La meta es llegar a 8.000 a 10.000 pasos al día. Esto puede quemar 200 a 400 kcal diarias más sin cambiar lo que comes.</li>
           <li><strong>Dormir poco.</strong> Dormir 6 horas y despertarte cansado da más hambre y hace que pierdas más músculo durante un déficit. Intenta dormir al menos 7 horas. Las noches en que madrugas, corta el PC más temprano.</li>
-          <li><strong>Repartir la proteína.</strong> Con tus 4 comidas, procura comer 40 a 50 g de proteína en cada una. Que cenes después de las 10 no es un problema; lo que cuenta es el total del día.</li>
+          <li><strong>Repartir la proteína.</strong> Divide tus 180 g entre las comidas del día: con 3 comidas son unos 60 g en cada una; con 4, unos 45 g. Que cenes después de las 10 no es un problema; lo que cuenta es el total del día.</li>
         </ol>
       </div>
       <div class="row end">
@@ -449,8 +465,50 @@
     </form>
   </dialog>
 
+  <!-- ============ DIÁLOGO COMIDA (agregar / renombrar / quitar) ============ -->
+  <dialog id="mealDialog">
+    <form id="mealForm" class="form">
+      <h2 id="mealDialogTitle">Agregar comida</h2>
+      <label>Nombre<input type="text" name="label" maxlength="40" required placeholder="Ej. Brunch" /></label>
+      <div class="chips" id="mealChips"></div>
+      <div id="mealRemoveBox" class="stack remove-box hidden">
+        <p class="muted small" id="mealRemoveText"></p>
+        <label id="mealMoveField">Mover sus alimentos a<select name="moveTo"></select></label>
+        <button class="btn danger" type="button" id="mealRemoveBtn">Quitar esta comida del día</button>
+      </div>
+      <div class="row end">
+        <button class="btn ghost" type="button" data-close>Cancelar</button>
+        <button class="btn primary" type="submit" id="mealSubmit">Agregar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ============ DIÁLOGO ENTRENAMIENTO ============ -->
+  <dialog id="workoutDialog">
+    <form id="workoutForm" class="form">
+      <h2>Agregar entrenamiento</h2>
+      <label>Tipo<select name="type"></select></label>
+      <div class="grid-2">
+        <label>Duración (min)<input type="number" name="minutes" min="1" max="600" step="1" inputmode="numeric" required /></label>
+        <label>Intensidad
+          <select name="intensity">
+            <option value="ligera">Ligera</option>
+            <option value="moderada">Moderada</option>
+            <option value="intensa">Intensa</option>
+          </select>
+        </label>
+      </div>
+      <div class="preview single" id="workoutPreview"></div>
+      <p class="muted small">Estimación con valores MET del Compendio de Actividades Físicas y tu peso. Las caminatas súmalas en km en <em>Pasos</em> para no contarlas dos veces.</p>
+      <div class="row end">
+        <button class="btn ghost" type="button" data-close>Cancelar</button>
+        <button class="btn primary" type="submit">Agregar</button>
+      </div>
+    </form>
+  </dialog>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script type="module" src="js/app.js?v=7"></script>
+  <script type="module" src="js/app.js?v=8"></script>
 </body>
 </html>

@@ -25,7 +25,7 @@ create table if not exists public.entries (
   id           uuid primary key,
   user_id      uuid not null default auth.uid() references auth.users(id) on delete cascade,
   date         date not null,
-  meal         text not null check (meal in ('desayuno', 'almuerzo', 'cena', 'snack')),
+  meal         text not null,
   product_id   uuid,
   product_name text not null,
   amount       numeric not null check (amount > 0),
@@ -38,6 +38,8 @@ create table if not exists public.entries (
   created_at   timestamptz not null default now()
 );
 alter table public.entries add column if not exists fiber numeric not null default 0;
+-- Las comidas ahora son libres por día (se pueden agregar, quitar o renombrar)
+alter table public.entries drop constraint if exists entries_meal_check;
 create index if not exists entries_user_date_idx on public.entries (user_id, date);
 
 -- Metas diarias + perfil (datos para calcular el plan)
@@ -51,6 +53,7 @@ create table if not exists public.goals (
   water_ml numeric not null default 3000,
   steps    numeric not null default 8000,
   sleep_h  numeric not null default 7,
+  burn     numeric not null default 450,
   profile  jsonb
 );
 alter table public.goals add column if not exists fiber    numeric not null default 30;
@@ -58,6 +61,7 @@ alter table public.goals add column if not exists water_ml numeric not null defa
 alter table public.goals add column if not exists steps    numeric not null default 8000;
 alter table public.goals add column if not exists sleep_h  numeric not null default 7;
 alter table public.goals add column if not exists profile  jsonb;
+alter table public.goals add column if not exists burn     numeric not null default 450;
 
 -- Registro corporal diario
 create table if not exists public.body_logs (
@@ -68,8 +72,12 @@ create table if not exists public.body_logs (
   steps    integer,
   sleep_h  numeric,
   water_ml integer,
+  meals    jsonb,   -- comidas del día: [{id, label}]
+  workouts jsonb,   -- entrenamientos: [{id, type, minutes, intensity, kcal}]
   primary key (user_id, date)
 );
+alter table public.body_logs add column if not exists meals    jsonb;
+alter table public.body_logs add column if not exists workouts jsonb;
 
 alter table public.products  enable row level security;
 alter table public.entries   enable row level security;

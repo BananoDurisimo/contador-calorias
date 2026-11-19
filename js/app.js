@@ -1,6 +1,6 @@
-import { LocalDB } from './db-local.js?v=7';
-import { SupabaseDB, getSupabaseClient } from './db-supabase.js?v=7';
-import { calcPlan, weeklyAnalysis } from './plan.js?v=7';
+import { LocalDB } from './db-local.js?v=8';
+import { SupabaseDB, getSupabaseClient } from './db-supabase.js?v=8';
+import { calcPlan, weeklyAnalysis } from './plan.js?v=8';
 
 // ---------------------------------------------------------------------------
 // Utilidades
@@ -9,14 +9,28 @@ const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
 // Comidas según el horario del usuario (los id se mantienen por compatibilidad con la base de datos)
-const MEALS = [
-  { id: 'desayuno', label: 'Primera comida', time: '10 a 12 am' },
-  { id: 'almuerzo', label: 'Almuerzo', time: '3 a 5 pm' },
-  { id: 'snack', label: 'Media tarde', time: '6 a 8 pm · opcional' },
-  { id: 'cena', label: 'Cena', time: 'desde las 10 pm' },
-];
-const PROTEIN_PER_MEAL = [40, 50];
-const DEFAULT_GOALS = { kcal: 2100, protein: 180, carbs: 200, fat: 65, fiber: 30, water_ml: 3500, steps: 8000, sleep_h: 7 };
+// Comidas conocidas (los id se mantienen por compatibilidad con registros anteriores).
+const MEAL_INFO = {
+  desayuno: { label: 'Desayuno', time: '10 a 12 am' },
+  almuerzo: { label: 'Almuerzo', time: '3 a 5 pm' },
+  snack: { label: 'Media tarde', time: '6 a 8 pm' },
+  cena: { label: 'Cena', time: 'desde las 10 pm' },
+};
+// Base: 3 comidas. Cada día se pueden agregar, quitar o renombrar.
+const DEFAULT_MEALS = ['desayuno', 'almuerzo', 'cena'];
+const MEAL_SUGGESTIONS = ['Desayuno', 'Brunch', 'Almuerzo', 'Media tarde', 'Pre-entreno', 'Post-entreno', 'Cena', 'Snack'];
+
+// Entrenamientos: MET del Compendio de Actividades Físicas (2011/2024).
+// Calorías = (MET − 1) × peso × horas  → solo lo que se quema por encima del reposo.
+const WORKOUT_TYPES = {
+  torso: { label: 'Pesas · torso', met: { ligera: 3.0, moderada: 3.5, intensa: 6.0 } },
+  pierna: { label: 'Pesas · pierna', met: { ligera: 3.5, moderada: 5.0, intensa: 6.0 } },
+  completo: { label: 'Pesas · cuerpo completo', met: { ligera: 3.5, moderada: 5.0, intensa: 6.0 } },
+  cardio: { label: 'Cardio (bici, elíptica…)', met: { ligera: 4.0, moderada: 5.0, intensa: 8.0 } },
+};
+const INTENSITY_LABEL = { ligera: 'Ligera', moderada: 'Moderada', intensa: 'Intensa' };
+
+const DEFAULT_GOALS = { kcal: 2100, protein: 180, carbs: 200, fat: 65, fiber: 30, water_ml: 3500, steps: 8000, sleep_h: 7, burn: 450 };
 const CONFIG_KEY = 'cc-config';
 // Proyecto Supabase por defecto. La clave "publishable" es pública por diseño:
 // los datos están protegidos por el inicio de sesión y Row Level Security.
@@ -67,12 +81,27 @@ const prettyDate = (iso, opts = { weekday: 'short', day: 'numeric', month: 'shor
   fromISO(iso).toLocaleDateString('es-CO', opts);
 const shortDate = (iso) => prettyDate(iso, { day: 'numeric', month: 'short' }).replace(' de ', ' ');
 
-function defaultMealForNow() {
+function defaultMealForNow(meals = dayMeals()) {
   const h = new Date().getHours();
-  if (h >= 5 && h < 14) return 'desayuno';
-  if (h >= 14 && h < 18) return 'almuerzo';
-  if (h >= 18 && h < 21) return 'snack';
-  return 'cena';
+  const night = h >= 21 || h < 5;
+  const pref = night ? 'cena' : h < 14 ? 'desayuno' : h < 18 ? 'almuerzo' : 'snack';
+  if (meals.some((m) => m.id === pref)) return pref;
+  if (night) return meals[meals.length - 1].id;
+  if (h < 14) return meals[0].id;
+  return meals[Math.min(1, meals.length - 1)].id;
+}
+
+// Comidas del día seleccionado: las guardadas para ese día, o las 3 de base.
+// Si hay alimentos en una comida que no está en la lista (registros antiguos), se muestra igual.
+function dayMeals() {
+  const saved = Array.isArray(state.body?.meals) && state.body.meals.length ? state.body.meals : null;
+  const meals = saved
+    ? saved.map((m) => ({ id: m.id, label: m.label }))
+    : DEFAULT_MEALS.map((id) => ({ id, label: MEAL_INFO[id].label }));
+  for (const e of state.entries) {
+    if (!meals.some((m) => m.id === e.meal)) meals.push({ id: e.meal, label: MEAL_INFO[e.meal]?.label || 'Otra comida' });
+  }
+  return meals;
 }
 
 function unitShort(p) {
@@ -285,10 +314,13 @@ function renderDay() {
     $('.bar-fill', el).style.width = `${goal > 0 ? Math.min((t[m] / goal) * 100, 100) : 0}%`;
   }
 
-  $('#meals').innerHTML = MEALS.map((meal) => {
+  const meals = dayMeals();
+  const proteinPerMeal = num(g.protein) / meals.length;
+  $('#meals').innerHTML = meals.map((meal) => {
     const list = state.entries.filter((e) => e.meal === meal.id);
     const mt = totals(list);
-    const pClass = mt.protein >= PROTEIN_PER_MEAL[0] ? 'ok' : list.length ? 'low' : '';
+    const pClass = mt.protein >= proteinPerMeal * 0.9 ? 'ok' : list.length ? 'low' : '';
+    const time = MEAL_INFO[meal.id] && MEAL_INFO[meal.id].label === meal.label ? MEAL_INFO[meal.id].time : '';
     const items = list.length
       ? list.map((e) => `
         <div class="entry">
@@ -305,17 +337,21 @@ function renderDay() {
         <div class="meal-head">
           <div class="meal-title">
             <div class="meal-title-row">
-              <h3>${meal.label}</h3>
+              <h3>${esc(meal.label)}</h3>
               <small>${fmt(r0(mt.kcal))} kcal</small>
-              <span class="pchip ${pClass}" title="Meta: ${PROTEIN_PER_MEAL[0]} a ${PROTEIN_PER_MEAL[1]} g de proteína por comida">P ${fmt(mt.protein, 0)} / ${PROTEIN_PER_MEAL[0]}–${PROTEIN_PER_MEAL[1]} g</span>
+              <span class="pchip ${pClass}" title="Meta: ≈ ${fmt(proteinPerMeal)} g de proteína por comida (${fmt(g.protein)} g entre ${meals.length} comidas)">P ${fmt(mt.protein, 0)} / ≈${fmt(proteinPerMeal)} g</span>
             </div>
-            <span class="meal-time">${meal.time}</span>
+            ${time ? `<span class="meal-time">${time}</span>` : ''}
           </div>
-          <button class="link-btn" data-add-meal="${meal.id}">+ Agregar</button>
+          <div class="meal-actions">
+            <button class="link-btn" data-add-meal="${esc(meal.id)}">+ Agregar</button>
+            <button class="icon-btn small" data-edit-meal="${esc(meal.id)}" title="Renombrar o quitar comida" aria-label="Opciones de ${esc(meal.label)}">⋯</button>
+          </div>
         </div>
         ${items}
       </div>`;
-  }).join('');
+  }).join('') + `
+    <button class="add-meal-btn" type="button" data-new-meal>+ Agregar comida</button>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -341,6 +377,7 @@ async function renderHabits() {
       ? `✓ meta cumplida · llevas ≈ ${fmt(kmDone, 1)} km`
       : `llevas ≈ ${fmt(kmDone, 1)} km · faltan ${fmt(g.steps - steps)} pasos (≈ ${fmt(kmMissing, 1)} km)`;
   sh.className = `hint ${steps >= g.steps ? 'ok' : steps ? 'warn' : ''}`;
+  renderActivity();
 
   const sleep = num(b.sleep_h);
   const slh = $('#hSleepHint');
@@ -395,6 +432,196 @@ async function addKm() {
   toast(`+${fmt(km, 2)} km = ${fmt(added)} pasos (total ${fmt(total)})`);
 }
 
+// ---------------------------------------------------------------------------
+// Calorías por quemar: pasos + entrenamientos
+// ---------------------------------------------------------------------------
+function bodyWeight() {
+  return num(state.body?.weight) || num(state.profile?.weight) || 80;
+}
+// Caminar: ≈ 0,5 kcal por kg y por km por encima del reposo.
+function stepsKcal(steps) {
+  return Math.round((num(steps) / stepsPerKm()) * bodyWeight() * 0.5);
+}
+function workoutKcal(type, minutes, intensity) {
+  const met = WORKOUT_TYPES[type]?.met[intensity] ?? 3.5;
+  return Math.round((met - 1) * bodyWeight() * (num(minutes) / 60));
+}
+function workoutsOf(log) {
+  return Array.isArray(log?.workouts) ? log.workouts : [];
+}
+function burnedOf(log) {
+  const sk = stepsKcal(num(log?.steps));
+  const wk = workoutsOf(log).reduce((sum, w) => sum + num(w.kcal), 0);
+  return { steps: sk, workouts: wk, total: sk + wk };
+}
+
+function renderActivity() {
+  const b = state.body || {};
+  const goal = num(state.goals.burn);
+  const burned = burnedOf(b);
+  const left = goal - burned.total;
+  $('#burnLeft').textContent = fmt(Math.max(0, left));
+  const label = $('#burnLabel');
+  label.textContent = goal <= 0
+    ? 'Define tu meta en Ajustes'
+    : left > 0 ? `kcal por quemar · meta ${fmt(goal)}` : `✓ meta cumplida (+${fmt(-left)} kcal)`;
+  label.classList.toggle('ok', goal > 0 && left <= 0);
+  $('#burnFill').style.width = `${goal > 0 ? Math.min((burned.total / goal) * 100, 100) : 0}%`;
+  $('#burnBreakdown').textContent = `Quemadas ${fmt(burned.total)} kcal · pasos ${fmt(burned.steps)} · entrenamiento ${fmt(burned.workouts)}`;
+
+  const list = workoutsOf(b);
+  $('#workoutList').innerHTML = list.map((w) => `
+    <div class="entry">
+      <div class="entry-main">
+        <div class="entry-name">${esc(WORKOUT_TYPES[w.type]?.label || 'Entrenamiento')}</div>
+        <div class="entry-sub">${fmt(w.minutes)} min · ${esc(INTENSITY_LABEL[w.intensity] || '')}</div>
+      </div>
+      <span class="entry-kcal">−${fmt(w.kcal)} kcal</span>
+      <button class="del-btn" data-del-workout="${esc(w.id)}" aria-label="Eliminar entrenamiento">✕</button>
+    </div>`).join('');
+}
+
+// Guarda cambios en el registro del día (comidas, entrenamientos) sin tocar los campos que se están escribiendo.
+async function saveBodyPatch(patch) {
+  const log = { ...state.body, ...patch, date: state.date };
+  if (await safe(() => state.db.saveBody(log), 'No se pudo guardar') === FAIL) return false;
+  state.body = log;
+  return true;
+}
+
+function openWorkoutDialog() {
+  const f = $('#workoutForm');
+  f.reset();
+  f.type.value = 'torso';
+  f.minutes.value = 60;
+  f.intensity.value = 'moderada';
+  updateWorkoutPreview();
+  $('#workoutDialog').showModal();
+}
+
+function updateWorkoutPreview() {
+  const f = $('#workoutForm');
+  const kcal = workoutKcal(f.type.value, f.minutes.value, f.intensity.value);
+  $('#workoutPreview').innerHTML = `<div><strong>≈ ${fmt(kcal)}</strong><span>kcal quemadas (con ${fmt(bodyWeight(), 1)} kg)</span></div>`;
+}
+
+async function submitWorkout(ev) {
+  ev.preventDefault();
+  const f = $('#workoutForm');
+  const minutes = Math.round(num(f.minutes.value));
+  if (minutes <= 0) return toast('Indica cuántos minutos entrenaste', true);
+  const w = {
+    id: uuid(),
+    type: f.type.value,
+    minutes,
+    intensity: f.intensity.value,
+    kcal: workoutKcal(f.type.value, minutes, f.intensity.value),
+  };
+  if (!(await saveBodyPatch({ workouts: [...workoutsOf(state.body), w] }))) return;
+  $('#workoutDialog').close();
+  renderActivity();
+  toast(`${WORKOUT_TYPES[w.type].label}: −${fmt(w.kcal)} kcal`);
+}
+
+async function deleteWorkout(id) {
+  const w = workoutsOf(state.body).find((x) => x.id === id);
+  if (!w || !confirm(`¿Eliminar "${WORKOUT_TYPES[w.type]?.label || 'entrenamiento'}" (${fmt(w.minutes)} min)?`)) return;
+  if (!(await saveBodyPatch({ workouts: workoutsOf(state.body).filter((x) => x.id !== id) }))) return;
+  renderActivity();
+}
+
+// ---------------------------------------------------------------------------
+// Comidas del día: agregar, renombrar, quitar
+// ---------------------------------------------------------------------------
+let editingMealId = null;
+
+function openMealDialog(mealId = null) {
+  editingMealId = mealId;
+  const f = $('#mealForm');
+  f.reset();
+  const meals = dayMeals();
+  const meal = meals.find((m) => m.id === mealId);
+  $('#mealDialogTitle').textContent = meal ? `Editar "${meal.label}"` : 'Agregar comida';
+  $('#mealSubmit').textContent = meal ? 'Guardar nombre' : 'Agregar';
+  f.label.value = meal ? meal.label : '';
+  const used = new Set(meals.map((m) => m.label.toLowerCase()));
+  $('#mealChips').innerHTML = MEAL_SUGGESTIONS
+    .filter((n) => !used.has(n.toLowerCase()) || (meal && meal.label === n))
+    .map((n) => `<button type="button" class="chip chip-btn" data-meal-chip="${esc(n)}">${esc(n)}</button>`).join('');
+
+  const box = $('#mealRemoveBox');
+  box.classList.toggle('hidden', !meal);
+  if (meal) {
+    const count = state.entries.filter((e) => e.meal === meal.id).length;
+    const others = meals.filter((m) => m.id !== meal.id);
+    $('#mealRemoveText').textContent = others.length
+      ? count
+        ? `Esta comida tiene ${count} alimento${count === 1 ? '' : 's'}. Al quitarla puedes moverlos a otra comida (útil cuando juntas desayuno y almuerzo).`
+        : 'Esta comida no tiene alimentos.'
+      : 'Es la única comida del día: no se puede quitar.';
+    $('#mealMoveField').classList.toggle('hidden', !count || !others.length);
+    f.moveTo.innerHTML = others.map((m) => `<option value="${esc(m.id)}">${esc(m.label)}</option>`).join('')
+      + '<option value="__delete">Eliminar sus alimentos</option>';
+    $('#mealRemoveBtn').disabled = !others.length;
+  }
+  $('#mealDialog').showModal();
+  if (!meal) f.label.focus();
+}
+
+async function submitMeal(ev) {
+  ev.preventDefault();
+  const label = $('#mealForm').label.value.trim();
+  if (!label) return toast('Escribe un nombre para la comida', true);
+  const meals = dayMeals();
+  let next;
+  if (editingMealId) {
+    next = meals.map((m) => (m.id === editingMealId ? { ...m, label } : m));
+  } else {
+    if (meals.length >= 8) return toast('Máximo 8 comidas por día', true);
+    // Ubica la comida nueva en orden del día según su nombre (Desayuno → … → Cena → Snack); si es otra, al final.
+    const rank = (l) => {
+      const i = MEAL_SUGGESTIONS.findIndex((n) => n.toLowerCase() === l.toLowerCase());
+      return i === -1 ? Infinity : i;
+    };
+    const meal = { id: `m-${uuid().slice(0, 8)}`, label };
+    const r = rank(label);
+    const pos = r === Infinity ? -1 : meals.findIndex((m) => rank(m.label) > r);
+    next = pos === -1 ? [...meals, meal] : [...meals.slice(0, pos), meal, ...meals.slice(pos)];
+  }
+  if (!(await saveBodyPatch({ meals: next }))) return;
+  $('#mealDialog').close();
+  renderDay();
+  toast(editingMealId ? 'Comida renombrada' : `"${label}" agregada`);
+}
+
+async function removeMeal() {
+  const meals = dayMeals();
+  const meal = meals.find((m) => m.id === editingMealId);
+  if (!meal || meals.length <= 1) return;
+  const list = state.entries.filter((e) => e.meal === meal.id);
+  const target = $('#mealForm').moveTo.value;
+  const targetMeal = meals.find((m) => m.id === target);
+  const msg = !list.length
+    ? `¿Quitar "${meal.label}" de este día?`
+    : target === '__delete'
+      ? `¿Quitar "${meal.label}" y eliminar sus ${list.length} alimentos?`
+      : `¿Quitar "${meal.label}" y mover sus ${list.length} alimentos a "${targetMeal.label}"?`;
+  if (!confirm(msg)) return;
+  for (const e of list) {
+    const r = target === '__delete'
+      ? await safe(() => state.db.deleteEntry(e.id), 'No se pudo eliminar')
+      : await safe(() => state.db.saveEntry({ ...e, meal: target }), 'No se pudo mover');
+    if (r === FAIL) return;
+  }
+  const remaining = meals.filter((m) => m.id !== meal.id);
+  if (!(await saveBodyPatch({ meals: remaining }))) return;
+  const entries = await safe(() => state.db.listEntries(state.date), 'No se pudo cargar el día');
+  if (entries !== FAIL) state.entries = entries;
+  $('#mealDialog').close();
+  renderDay();
+  toast(`"${meal.label}" quitada de este día`);
+}
+
 let habitsTimer;
 function queueHabitsSave() {
   clearTimeout(habitsTimer);
@@ -434,6 +661,8 @@ async function addWater(delta) {
 function openEntryDialog({ meal = defaultMealForNow(), entry = null } = {}) {
   const form = $('#entryForm');
   form.reset();
+  $('#mealSelect').innerHTML = dayMeals()
+    .map((m) => `<option value="${esc(m.id)}">${esc(m.label)}</option>`).join('');
   state.editingEntry = entry;
   state.pickedProduct = null;
 
@@ -696,7 +925,7 @@ async function renderProgress() {
   const analysis = weeklyAnalysis(logs, today, addDays, 8);
   renderRecommendation(analysis.rec);
   renderWeightChart(logs, today);
-  renderWeeksTable(analysis.blocks, entries);
+  renderWeeksTable(analysis.blocks, entries, logs);
   renderCalorieHistory(entries, today);
 }
 
@@ -786,7 +1015,7 @@ function renderWeightChart(logs, today) {
     </svg>`;
 }
 
-function renderWeeksTable(blocks, entries) {
+function renderWeeksTable(blocks, entries, logs = []) {
   const rows = blocks.map((b, i) => {
     const prev = blocks[i + 1];
     let change = b.weight != null && prev && prev.weight != null ? b.weight - prev.weight : null;
@@ -795,7 +1024,10 @@ function renderWeeksTable(blocks, entries) {
     for (const e of entries) if (e.date >= b.start && e.date <= b.end) dayTotals[e.date] = (dayTotals[e.date] || 0) + num(e.kcal);
     const kcalDays = Object.values(dayTotals);
     const kcalAvg = kcalDays.length ? kcalDays.reduce((s, x) => s + x, 0) / kcalDays.length : null;
-    if (b.weight == null && kcalAvg == null && b.waist == null && b.steps == null && b.sleep == null) return '';
+    const burnDays = logs.filter((l) => l.date >= b.start && l.date <= b.end)
+      .map((l) => burnedOf(l).total).filter((x) => x > 0);
+    const burnAvg = burnDays.length ? burnDays.reduce((s2, x) => s2 + x, 0) / burnDays.length : null;
+    if (b.weight == null && kcalAvg == null && b.waist == null && b.steps == null && b.sleep == null && burnAvg == null) return '';
     return `
       <tr>
         <td>${esc(shortDate(b.start))} – ${esc(shortDate(b.end))}</td>
@@ -804,10 +1036,11 @@ function renderWeeksTable(blocks, entries) {
         <td>${b.waist != null ? `${fmt(b.waist, 1)} cm` : '—'}</td>
         <td>${kcalAvg != null ? fmt(r0(kcalAvg)) : '—'}</td>
         <td>${b.steps != null ? fmt(r0(b.steps)) : '—'}</td>
+        <td>${burnAvg != null ? fmt(r0(burnAvg)) : '—'}</td>
         <td>${b.sleep != null ? `${fmt(b.sleep, 1)} h` : '—'}</td>
       </tr>`;
   }).join('');
-  $('#weeksTable tbody').innerHTML = rows || '<tr><td colspan="7" class="empty">Todavía no hay datos semanales.</td></tr>';
+  $('#weeksTable tbody').innerHTML = rows || '<tr><td colspan="8" class="empty">Todavía no hay datos semanales.</td></tr>';
 }
 
 function renderCalorieHistory(allEntries, today) {
@@ -909,7 +1142,7 @@ function renderPlan() {
   const r = calcPlan(p);
   const g = r.goals;
   const cur = state.goals;
-  const same = ['kcal', 'protein', 'carbs', 'fat', 'fiber', 'water_ml'].every((k) => num(cur[k]) === num(g[k]));
+  const same = ['kcal', 'protein', 'carbs', 'fat', 'fiber', 'water_ml', 'burn'].every((k) => num(cur[k]) === num(g[k]));
   const tdee50 = r0(r.tdee / 50) * 50;
   const deficit50 = r0(r.deficit / 50) * 50;
 
@@ -925,7 +1158,9 @@ function renderPlan() {
         <div class="stat"><span>Agua</span><strong>${fmt(Math.max(2, g.water_ml / 1000 - 0.5), 1)} a ${fmt(g.water_ml / 1000, 1)} L</strong></div>
         <div class="stat"><span>Pasos</span><strong>8.000 a 10.000</strong></div>
         <div class="stat"><span>Sueño</span><strong>7 h o más</strong></div>
+        <div class="stat"><span>Por quemar</span><strong>${fmt(g.burn)} kcal</strong></div>
       </div>
+      <p class="muted small">Las calorías por quemar (pasos + entrenamiento) ya están contadas en tus ${fmt(g.kcal)} kcal: no las vuelvas a comer, son las que hacen que el déficit se cumpla.</p>
       ${same
         ? '<p class="muted small">✓ Estas son tus metas actuales en la app.</p>'
         : `<p class="muted small goals-diff">Tus metas actuales en la app: ${fmt(cur.kcal)} kcal · P ${fmt(cur.protein, 1)} g · C ${fmt(cur.carbs, 1)} g · G ${fmt(cur.fat, 1)} g.</p>
@@ -949,7 +1184,7 @@ function renderPlan() {
 }
 
 async function applyPlanGoals(g) {
-  const goals = { ...state.goals, ...g, steps: state.goals.steps || 8000, sleep_h: state.goals.sleep_h || 7 };
+  const goals = { ...state.goals, ...g, steps: state.goals.steps || g.steps, sleep_h: state.goals.sleep_h || 7 };
   if (await safe(() => state.db.saveGoals(goals), 'No se pudieron guardar las metas') === FAIL) return;
   state.goals = goals;
   fillGoalsForm();
@@ -962,7 +1197,7 @@ async function applyPlanGoals(g) {
 // ---------------------------------------------------------------------------
 // Ajustes
 // ---------------------------------------------------------------------------
-const GOAL_FIELDS = ['kcal', 'protein', 'carbs', 'fat', 'fiber', 'water_ml', 'steps', 'sleep_h'];
+const GOAL_FIELDS = ['kcal', 'protein', 'carbs', 'fat', 'fiber', 'water_ml', 'steps', 'sleep_h', 'burn'];
 
 function fillGoalsForm() {
   const f = $('#goalsForm');
@@ -1107,7 +1342,8 @@ async function importJSON(file) {
 // Eventos
 // ---------------------------------------------------------------------------
 function bindEvents() {
-  $('#mealSelect').innerHTML = MEALS.map((m) => `<option value="${m.id}">${m.label} (${m.time.replace(' · opcional', '')})</option>`).join('');
+  $('#workoutForm').type.innerHTML = Object.entries(WORKOUT_TYPES)
+    .map(([id, t]) => `<option value="${id}">${t.label}</option>`).join('');
 
   $$('.tab').forEach((t) => t.addEventListener('click', () => showView(t.dataset.view)));
   $('#dbBadge').addEventListener('click', () => showView('ajustes'));
@@ -1123,11 +1359,17 @@ function bindEvents() {
   // Hábitos
   ['#hWeight', '#hSteps', '#hSleep', '#hWaist'].forEach((id) => $(id).addEventListener('input', queueHabitsSave));
   $('#addKmBtn').addEventListener('click', addKm);
+  $('#addWorkoutBtn').addEventListener('click', openWorkoutDialog);
+  $('#workoutForm').addEventListener('submit', submitWorkout);
+  $('#workoutForm').addEventListener('input', updateWorkoutPreview);
+  $('#workoutForm').addEventListener('change', updateWorkoutPreview);
+  $('#mealForm').addEventListener('submit', submitMeal);
+  $('#mealRemoveBtn').addEventListener('click', removeMeal);
   $('#hKm').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addKm(); } });
 
   // Delegación global de clics
   document.addEventListener('click', (e) => {
-    const t = e.target.closest('[data-add-meal],[data-del-entry],[data-edit],[data-pick],[data-change-product],[data-goto-new-product],[data-edit-product],[data-del-product],[data-goto-date],[data-close],[data-water],[data-apply-adjust],[data-goto-plan]');
+    const t = e.target.closest('[data-add-meal],[data-del-entry],[data-edit],[data-pick],[data-change-product],[data-goto-new-product],[data-edit-product],[data-del-product],[data-goto-date],[data-close],[data-water],[data-apply-adjust],[data-goto-plan],[data-edit-meal],[data-new-meal],[data-meal-chip],[data-del-workout]');
     if (!t) return;
     const d = t.dataset;
     if (d.addMeal) openEntryDialog({ meal: d.addMeal });
@@ -1147,6 +1389,10 @@ function bindEvents() {
     else if (d.water) addWater(Number(d.water));
     else if (d.applyAdjust) applyAdjust(Number(d.applyAdjust));
     else if ('gotoPlan' in d) { $('#tipsDialog').close(); showView('plan'); }
+    else if (d.editMeal) openMealDialog(d.editMeal);
+    else if ('newMeal' in d) openMealDialog();
+    else if (d.mealChip) $('#mealForm').label.value = d.mealChip;
+    else if (d.delWorkout) deleteWorkout(d.delWorkout);
     else if ('close' in d) t.closest('dialog').close();
   });
   document.addEventListener('keydown', (e) => {

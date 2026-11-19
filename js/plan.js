@@ -35,13 +35,19 @@ export function calcPlan(p) {
   const fiber = Math.max(25, round((kcal / 1000) * 14, 5));
   const water_ml = round(35 * w, 250);
 
+  // Meta de calorías por quemar con actividad: pasos de la meta + pesas promediadas en la semana.
+  const stepsGoal = 8000;
+  const strideCm = h * (male ? 0.415 : 0.413);
+  const stepsGoalKcal = ((stepsGoal * strideCm) / 100000) * w * 0.5;
+  const burn = round(stepsGoalKcal + (sessionKcal * (+p.gym_days || 0)) / 7, 50);
+
   const deficit = tdee - kcal;
   const weeklyLossKg = (deficit * 7) / 7700;
 
   return {
     bmr, rfm, lbm, sedentary, walkKcal, sessionKcal, exerciseDaily, tdee,
     deficitPct, deficit, weeklyLossKg,
-    goals: { kcal, protein, carbs, fat, fiber, water_ml, steps: 8000, sleep_h: 7 },
+    goals: { kcal, protein, carbs, fat, fiber, water_ml, steps: stepsGoal, sleep_h: 7, burn },
   };
 }
 

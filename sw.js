@@ -3,18 +3,18 @@
 // - Si no hay internet, sirve la copia guardada (la app abre y funciona con la base local).
 // - La librería de Supabase (CDN) se guarda la primera vez y luego se sirve desde caché.
 // - Las llamadas a la API de Supabase nunca se guardan en caché.
-const VERSION = 'v7';
+const VERSION = 'v8';
 const CACHE = `cc-${VERSION}`;
 const CDN_CACHE = 'cc-cdn';
 
 const SHELL = [
   './',
   './index.html',
-  `./css/styles.css?v=7`,
-  `./js/app.js?v=7`,
-  `./js/db-local.js?v=7`,
-  `./js/db-supabase.js?v=7`,
-  `./js/plan.js?v=7`,
+  `./css/styles.css?v=8`,
+  `./js/app.js?v=8`,
+  `./js/db-local.js?v=8`,
+  `./js/db-supabase.js?v=8`,
+  `./js/plan.js?v=8`,
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',

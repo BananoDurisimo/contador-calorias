@@ -354,3 +354,32 @@ input, select { font-size: 16px; }
   .btn, .icon-btn { min-height: 40px; }
   .del-btn { width: 40px; height: 40px; }
 }
+
+/* ---------- v8: comidas flexibles y calorías por quemar ---------- */
+.meal-actions { display: flex; align-items: center; gap: 4px; }
+.meal-actions .icon-btn.small { width: 32px; height: 32px; min-height: 32px; font-size: 1.1rem; }
+.add-meal-btn {
+  width: 100%; padding: 14px; margin-bottom: 14px; border: 1px dashed var(--border); border-radius: var(--radius);
+  background: transparent; color: var(--muted); font: inherit; font-weight: 600; cursor: pointer;
+}
+.add-meal-btn:hover { color: var(--text); border-color: var(--muted); }
+.burn-top { display: flex; align-items: baseline; gap: 10px; margin: 2px 0 8px; }
+.burn-top strong { font-size: 2rem; font-variant-numeric: tabular-nums; }
+.burn-top span { color: var(--muted); font-size: .9rem; }
+.burn-top span.ok { color: var(--ok); font-weight: 600; }
+.burn-bar .bar-fill { background: var(--over); }
+.burn-breakdown { margin: 8px 0 4px; }
+.workout-list .entry:first-child { border-top: 0; }
+.workout-list { margin-bottom: 8px; }
+.steps-field { border-top: 1px solid var(--border); padding-top: 12px; }
+.steps-row { display: grid; gap: 8px; grid-template-columns: 1fr; }
+@media (min-width: 560px) { .steps-row { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 640px) { .habits-grid { grid-template-columns: repeat(3, 1fr); } }
+.chip-btn { border: 1px solid var(--border); cursor: pointer; font: inherit; font-size: .8rem; padding: 4px 10px; color: var(--text); }
+.chip-btn:hover { border-color: var(--muted); }
+.remove-box { border-top: 1px solid var(--border); padding-top: 12px; }
+.preview.single { grid-template-columns: 1fr; }
+.link-btn { white-space: nowrap; }
+.meal-head { gap: 8px; }
+.meal-title { flex: 1; min-width: 0; }
+.meal-actions { flex: none; }
