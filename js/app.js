@@ -1,6 +1,6 @@
-import { LocalDB } from './db-local.js?v=8';
-import { SupabaseDB, getSupabaseClient } from './db-supabase.js?v=8';
-import { calcPlan, weeklyAnalysis } from './plan.js?v=8';
+import { LocalDB } from './db-local.js?v=9';
+import { SupabaseDB, getSupabaseClient } from './db-supabase.js?v=9';
+import { calcPlan, weeklyAnalysis } from './plan.js?v=9';
 
 // ---------------------------------------------------------------------------
 // Utilidades
@@ -1269,7 +1269,10 @@ async function signup() {
   const { data, error } = await state.sb.auth.signUp({
     email, password, options: { emailRedirectTo: location.href.split('#')[0] },
   });
-  if (error) return toast(`No se pudo crear la cuenta: ${error.message}`, true);
+  if (error) {
+    const closed = /not allowed|disabled/i.test(error.message);
+    return toast(closed ? 'El registro de cuentas nuevas está desactivado. Si ya tienes cuenta, pulsa "Iniciar sesión".' : `No se pudo crear la cuenta: ${error.message}`, true);
+  }
   if (data.session) {
     await initDatabase();
     await reloadAll();
