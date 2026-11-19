@@ -1,6 +1,6 @@
-import { LocalDB } from './db-local.js?v=9';
-import { SupabaseDB, getSupabaseClient } from './db-supabase.js?v=9';
-import { calcPlan, weeklyAnalysis } from './plan.js?v=9';
+import { LocalDB } from './db-local.js?v=10';
+import { SupabaseDB, getSupabaseClient } from './db-supabase.js?v=10';
+import { calcPlan, weeklyAnalysis } from './plan.js?v=10';
 
 // ---------------------------------------------------------------------------
 // Utilidades
@@ -29,6 +29,18 @@ const WORKOUT_TYPES = {
   cardio: { label: 'Cardio (bici, elíptica…)', met: { ligera: 4.0, moderada: 5.0, intensa: 8.0 } },
 };
 const INTENSITY_LABEL = { ligera: 'Ligera', moderada: 'Moderada', intensa: 'Intensa' };
+
+// Íconos SVG en línea (trazo heredado del color del texto)
+const finePointer = () => window.matchMedia('(pointer: fine)').matches;
+
+const svgIcon = (d) => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg>`;
+const ICON = {
+  close: svgIcon('M6 6l12 12M18 6L6 18'),
+  dots: svgIcon('M5 12h.01M12 12h.01M19 12h.01'),
+  plus: svgIcon('M12 5v14M5 12h14'),
+  edit: svgIcon('M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4'),
+  trash: svgIcon('M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3'),
+};
 
 const DEFAULT_GOALS = { kcal: 2100, protein: 180, carbs: 200, fat: 65, fiber: 30, water_ml: 3500, steps: 8000, sleep_h: 7, burn: 450 };
 const CONFIG_KEY = 'cc-config';
@@ -211,8 +223,10 @@ function renderDbStatus() {
   const configured = !!(cfg.supabaseUrl && cfg.supabaseKey);
   const cloud = state.db && state.db.kind === 'supabase';
 
-  badge.textContent = cloud ? `Nube · ${state.user.email}` : configured ? 'Local · inicia sesión' : 'Local';
+  $('#dbBadgeText').textContent = cloud ? 'Nube' : configured ? 'Entrar' : 'Local';
+  badge.title = cloud ? `Datos en la nube · ${state.user.email}` : configured ? 'Inicia sesión para guardar en la nube' : 'Datos guardados en este dispositivo';
   badge.classList.toggle('cloud', cloud);
+  badge.classList.toggle('local', !cloud && !configured);
   $('#loginBanner').classList.toggle('hidden', cloud || !configured || !state.sb);
 
   $('#dbStatusText').textContent = cloud
@@ -228,7 +242,6 @@ function renderDbStatus() {
   $('#authLoggedOut').classList.toggle('hidden', !!state.user);
   $('#authLoggedIn').classList.toggle('hidden', !state.user);
   $('#authUser').textContent = state.user ? state.user.email : '';
-  if (configured) $('#supabaseDetails').open = true;
 }
 
 function stripNulls(obj) {
@@ -261,6 +274,7 @@ function showView(name) {
     t.setAttribute('aria-selected', on);
   });
   $$('.view').forEach((v) => v.classList.toggle('active', v.id === `view-${name}`));
+  document.body.dataset.view = name;
   if (name === 'progreso') renderProgress();
   window.scrollTo({ top: 0 });
 }
@@ -268,8 +282,21 @@ function showView(name) {
 // ---------------------------------------------------------------------------
 // Diario
 // ---------------------------------------------------------------------------
+function renderDateLabel() {
+  const today = todayISO();
+  const diff = daysBetween(state.date, today);
+  const base = fromISO(state.date).toLocaleDateString('es-CO', {
+    weekday: 'short', day: 'numeric', month: 'short',
+    ...(state.date.slice(0, 4) !== today.slice(0, 4) ? { year: 'numeric' } : {}),
+  }).replace(/\./g, '').replace(' de ', ' ');
+  const prefix = diff === 0 ? 'Hoy · ' : diff === 1 ? 'Ayer · ' : diff === -1 ? 'Mañana · ' : '';
+  $('#dateLabel').textContent = prefix + base;
+  $('#todayBtn').classList.toggle('hidden', diff === 0);
+}
+
 async function loadDay() {
   $('#dateInput').value = state.date;
+  renderDateLabel();
   const [entries, body] = await Promise.all([
     safe(() => state.db.listEntries(state.date), 'No se pudo cargar el día'),
     safe(() => state.db.getBody(state.date), 'No se pudo cargar el registro corporal'),
@@ -300,7 +327,7 @@ function renderDay() {
   const over = g.kcal > 0 && t.kcal > g.kcal;
   ring.classList.toggle('over', over);
   $('#kcalConsumed').textContent = fmt(r0(t.kcal));
-  $('#kcalGoalLabel').textContent = `de ${fmt(g.kcal)} kcal`;
+  $('#kcalGoalLabel').textContent = `Meta ${fmt(g.kcal)} kcal`;
   const rem = $('#kcalRemaining');
   rem.textContent = over
     ? `Te pasaste por ${fmt(r0(t.kcal - g.kcal))} kcal`
@@ -310,7 +337,7 @@ function renderDay() {
   for (const m of ['protein', 'carbs', 'fat', 'fiber']) {
     const el = $(`.macro[data-macro="${m}"]`);
     const goal = num(g[m]);
-    $('.macro-val', el).textContent = `${fmt(t[m], 1)} / ${fmt(goal, 1)} g`;
+    $('.macro-val', el).textContent = `${fmt(t[m], 0)} / ${fmt(goal, 0)} g`;
     $('.bar-fill', el).style.width = `${goal > 0 ? Math.min((t[m] / goal) * 100, 100) : 0}%`;
   }
 
@@ -328,27 +355,25 @@ function renderDay() {
             <div class="entry-name">${esc(e.product_name)}</div>
             <div class="entry-sub">${fmt(e.amount, 2)} ${esc(e.unit)} · <span class="m-p">P ${fmt(e.protein, 1)}</span> · <span class="m-c">C ${fmt(e.carbs, 1)}</span> · <span class="m-f">G ${fmt(e.fat, 1)}</span></div>
           </div>
-          <span class="entry-kcal">${fmt(r0(e.kcal))} kcal</span>
-          <button class="del-btn" data-del-entry="${e.id}" aria-label="Eliminar ${esc(e.product_name)}">✕</button>
+          <span class="entry-kcal">${fmt(r0(e.kcal))}</span>
+          <button class="del-btn" data-del-entry="${e.id}" aria-label="Eliminar ${esc(e.product_name)}">${ICON.close}</button>
         </div>`).join('')
-      : '<p class="empty">Sin alimentos registrados.</p>';
+      : '';
     return `
       <div class="card meal">
         <div class="meal-head">
-          <div class="meal-title">
-            <div class="meal-title-row">
-              <h3>${esc(meal.label)}</h3>
-              <small>${fmt(r0(mt.kcal))} kcal</small>
-              <span class="pchip ${pClass}" title="Meta: ≈ ${fmt(proteinPerMeal)} g de proteína por comida (${fmt(g.protein)} g entre ${meals.length} comidas)">P ${fmt(mt.protein, 0)} / ≈${fmt(proteinPerMeal)} g</span>
-            </div>
-            ${time ? `<span class="meal-time">${time}</span>` : ''}
-          </div>
-          <div class="meal-actions">
-            <button class="link-btn" data-add-meal="${esc(meal.id)}">+ Agregar</button>
-            <button class="icon-btn small" data-edit-meal="${esc(meal.id)}" title="Renombrar o quitar comida" aria-label="Opciones de ${esc(meal.label)}">⋯</button>
+          <div class="meal-name"><h3>${esc(meal.label)}</h3></div>
+          <div class="meal-head-right">
+            <span class="meal-kcal">${fmt(r0(mt.kcal))} kcal</span>
+            <button class="icon-btn small plain" data-edit-meal="${esc(meal.id)}" title="Renombrar o quitar comida" aria-label="Opciones de ${esc(meal.label)}">${ICON.dots}</button>
           </div>
         </div>
+        <div class="meal-meta">
+          <span class="pchip ${pClass}" title="Meta: ≈ ${fmt(proteinPerMeal)} g de proteína por comida (${fmt(g.protein)} g entre ${meals.length} comidas)">Proteína ${fmt(mt.protein, 0)} / ≈${fmt(proteinPerMeal)} g</span>
+          ${time ? `<span class="meal-time">${time}</span>` : ''}
+        </div>
         ${items}
+        <button class="add-food-btn" type="button" data-add-meal="${esc(meal.id)}">${ICON.plus} Agregar alimento</button>
       </div>`;
   }).join('') + `
     <button class="add-meal-btn" type="button" data-new-meal>+ Agregar comida</button>`;
@@ -477,7 +502,7 @@ function renderActivity() {
         <div class="entry-sub">${fmt(w.minutes)} min · ${esc(INTENSITY_LABEL[w.intensity] || '')}</div>
       </div>
       <span class="entry-kcal">−${fmt(w.kcal)} kcal</span>
-      <button class="del-btn" data-del-workout="${esc(w.id)}" aria-label="Eliminar entrenamiento">✕</button>
+      <button class="del-btn" data-del-workout="${esc(w.id)}" aria-label="Eliminar entrenamiento">${ICON.close}</button>
     </div>`).join('');
 }
 
@@ -492,9 +517,9 @@ async function saveBodyPatch(patch) {
 function openWorkoutDialog() {
   const f = $('#workoutForm');
   f.reset();
-  f.type.value = 'torso';
+  f.querySelector('input[name="type"][value="torso"]').checked = true;
+  f.querySelector('input[name="intensity"][value="moderada"]').checked = true;
   f.minutes.value = 60;
-  f.intensity.value = 'moderada';
   updateWorkoutPreview();
   $('#workoutDialog').showModal();
 }
@@ -677,6 +702,7 @@ function openEntryDialog({ meal = defaultMealForNow(), entry = null } = {}) {
     sel.classList.remove('hidden');
     sel.innerHTML = `<div><strong>${esc(entry.product_name)}</strong><small>Registrado: ${fmt(entry.amount, 2)} ${esc(entry.unit)}</small></div>`;
     $('#amountUnit').textContent = entry.unit;
+    renderQuickAmounts(entry.unit === 'g' || entry.unit === 'ml' ? entry.unit : 'unit');
   } else {
     $('#entryDialogTitle').textContent = 'Agregar alimento';
     $('#entrySubmit').textContent = 'Agregar';
@@ -685,11 +711,22 @@ function openEntryDialog({ meal = defaultMealForNow(), entry = null } = {}) {
     $('#selectedProduct').classList.add('hidden');
     $('#pickerSearch').value = '';
     $('#amountUnit').textContent = 'g';
+    $('#quickAmounts').innerHTML = '';
     renderPicker();
   }
   updateEntryPreview();
   $('#entryDialog').showModal();
-  if (!entry) $('#pickerSearch').focus();
+  $('#entryDialog .sheet-body').scrollTop = 0;
+  if (!entry && finePointer()) $('#pickerSearch').focus();
+}
+
+// Botones de cantidad rápida según la unidad del producto
+function renderQuickAmounts(unit) {
+  const mass = unit === 'g' || unit === 'ml';
+  const values = mass ? [50, 100, 150, 200, 250, 300] : [0.5, 1, 2, 3, 4];
+  const current = num($('#entryForm').amount.value);
+  $('#quickAmounts').innerHTML = values.map((v) =>
+    `<button type="button" class="chip chip-btn${v === current ? ' on' : ''}" data-quick-amount="${v}">${fmt(v, 1)}${mass ? ` ${unit}` : ''}</button>`).join('');
 }
 
 function renderPicker() {
@@ -704,8 +741,8 @@ function renderPicker() {
   el.innerHTML = list.length
     ? list.map((p) => `
       <button type="button" class="picker-item" data-pick="${p.id}" role="option">
-        <span>${esc(p.name)}${p.brand ? ` <small>· ${esc(p.brand)}</small>` : ''}</span>
-        <small>${fmt(p.kcal, 1)} kcal · P ${fmt(p.protein, 1)} g ${esc(baseLabel(p))}</small>
+        <span class="pi-name">${esc(p.name)}${p.brand ? ` <small>· ${esc(p.brand)}</small>` : ''}</span>
+        <span class="pi-sub">${fmt(p.kcal, 1)} kcal · <span class="m-p">P ${fmt(p.protein, 1)}</span> · <span class="m-c">C ${fmt(p.carbs, 1)}</span> · <span class="m-f">G ${fmt(p.fat, 1)}</span> · ${esc(baseLabel(p))}</span>
       </button>`).join('')
     : '<div class="picker-empty">Ningún producto coincide.</div>';
 }
@@ -723,9 +760,9 @@ function pickProduct(id) {
   $('#amountUnit').textContent = unitShort(p);
   const amount = $('#entryForm').amount;
   amount.value = p.base_amount;
+  renderQuickAmounts(p.base_type === 'unit' ? 'unit' : p.base_type);
   updateEntryPreview();
-  amount.focus();
-  amount.select();
+  if (finePointer()) { amount.focus(); amount.select(); }
 }
 
 function computeEntryNutrients() {
@@ -747,9 +784,11 @@ function updateEntryPreview() {
   const n = computeEntryNutrients() || { kcal: 0, protein: 0, carbs: 0, fat: 0 };
   $('#entryPreview').innerHTML = `
     <div><strong>${fmt(r0(n.kcal))}</strong><span>kcal</span></div>
-    <div><strong>${fmt(n.protein, 1)}</strong><span>Proteína g</span></div>
-    <div><strong>${fmt(n.carbs, 1)}</strong><span>Carbos g</span></div>
+    <div><strong>${fmt(n.protein, 1)}</strong><span>Prot. g</span></div>
+    <div><strong>${fmt(n.carbs, 1)}</strong><span>Carb. g</span></div>
     <div><strong>${fmt(n.fat, 1)}</strong><span>Grasa g</span></div>`;
+  const current = num($('#entryForm').amount.value);
+  $$('#quickAmounts [data-quick-amount]').forEach((b) => b.classList.toggle('on', num(b.dataset.quickAmount) === current));
 }
 
 async function submitEntry(ev) {
@@ -806,8 +845,8 @@ function renderProducts() {
   if (!state.products.length) {
     el.innerHTML = `
       <div class="card empty-state">
-        <p><strong>Todavía no has creado productos.</strong></p>
-        <p>Crea tus alimentos con los valores de la etiqueta (huevos, pollo, atún, lentejas…) y luego regístralos en tu diario.</p>
+        <strong>Todavía no has creado productos</strong>
+        <p class="small">Crea tus alimentos con los valores de la etiqueta (huevos, pollo, atún, lentejas…) y luego regístralos en tu diario.</p>
         <button class="btn primary" type="button" data-goto-new-product>+ Crear mi primer producto</button>
       </div>`;
     return;
@@ -816,23 +855,23 @@ function renderProducts() {
     ? list.map((p) => `
       <article class="product">
         <div class="product-top">
-          <div>
+          <div class="product-info" data-edit-product="${p.id}" role="button" tabindex="0" title="Editar">
             <div class="product-name">${esc(p.name)}</div>
-            ${p.brand ? `<div class="product-brand">${esc(p.brand)}</div>` : ''}
+            <div class="product-brand">${p.brand ? `${esc(p.brand)} · ` : ''}${esc(baseLabel(p))}</div>
           </div>
           <div class="product-kcal">${fmt(p.kcal, 1)} <small>kcal</small></div>
         </div>
-        <div class="chips">
-          <span class="chip">${esc(baseLabel(p))}</span>
-          <span class="chip p">P ${fmt(p.protein, 1)} g</span>
-          <span class="chip c">C ${fmt(p.carbs, 1)} g</span>
-          <span class="chip f">G ${fmt(p.fat, 1)} g</span>
-          ${p.fiber != null ? `<span class="chip">Fibra ${fmt(p.fiber, 1)} g</span>` : ''}
-          ${p.sugar != null ? `<span class="chip">Azúcar ${fmt(p.sugar, 1)} g</span>` : ''}
-        </div>
-        <div class="product-actions">
-          <button class="btn ghost small" data-edit-product="${p.id}">Editar</button>
-          <button class="btn danger small" data-del-product="${p.id}">Eliminar</button>
+        <div class="product-bottom">
+          <div class="chips">
+            <span class="chip p">P ${fmt(p.protein, 1)}</span>
+            <span class="chip c">C ${fmt(p.carbs, 1)}</span>
+            <span class="chip f">G ${fmt(p.fat, 1)}</span>
+            ${p.fiber != null ? `<span class="chip">Fib ${fmt(p.fiber, 1)}</span>` : ''}
+          </div>
+          <div class="product-actions">
+            <button class="icon-btn small plain" data-edit-product="${p.id}" aria-label="Editar ${esc(p.name)}">${ICON.edit}</button>
+            <button class="icon-btn small plain danger" data-del-product="${p.id}" aria-label="Eliminar ${esc(p.name)}">${ICON.trash}</button>
+          </div>
         </div>
       </article>`).join('')
     : '<p class="empty">Ningún producto coincide con la búsqueda.</p>';
@@ -968,6 +1007,17 @@ async function applyAdjust(delta) {
   toast('Metas ajustadas');
 }
 
+// Tamaño real del gráfico: el SVG se dibuja al ancho del contenedor para que el texto se lea a 11 px reales.
+function chartSize(el, h = 200) {
+  const w = Math.round(el.clientWidth || el.parentElement?.clientWidth || 320);
+  return { W: Math.max(260, w), H: h };
+}
+const capitalize = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+const shortDM = (iso) => {
+  const d = fromISO(iso);
+  return `${d.getDate()}/${d.getMonth() + 1}`;
+};
+
 function renderWeightChart(logs, today) {
   const days = state.wrange;
   const start = addDays(today, -(days - 1));
@@ -980,7 +1030,7 @@ function renderWeightChart(logs, today) {
       const v = byDate.get(addDays(d, -k));
       if (v) win.push(v);
     }
-    pts.push({ date: d, w: byDate.get(d) || null, avg: win.length ? win.reduce((s, x) => s + x, 0) / win.length : null });
+    pts.push({ date: d, w: byDate.get(d) || null, avg: win.length ? win.reduce((s2, x) => s2 + x, 0) / win.length : null });
   }
   const values = pts.flatMap((p) => [p.w, p.avg]).filter(Boolean);
   const el = $('#weightChart');
@@ -988,7 +1038,8 @@ function renderWeightChart(logs, today) {
     el.innerHTML = '<p class="empty">Aún no hay pesos registrados. Anótalo cada mañana en <em>Hábitos del día</em>.</p>';
     return;
   }
-  const W = 640, H = 240, padL = 44, padB = 26, padT = 12, padR = 10;
+  const { W, H } = chartSize(el, 190);
+  const padL = 34, padB = 22, padT = 10, padR = 8;
   let min = Math.min(...values), max = Math.max(...values);
   if (max - min < 2) { min -= 1; max += 1; }
   min = Math.floor(min - 0.5); max = Math.ceil(max + 0.5);
@@ -996,7 +1047,8 @@ function renderWeightChart(logs, today) {
   const x = (i) => padL + (days === 1 ? innerW / 2 : (i / (days - 1)) * innerW);
   const y = (v) => padT + innerH - ((v - min) / (max - min)) * innerH;
   const ticks = [min, (min + max) / 2, max];
-  const labelEvery = Math.ceil(days / 6);
+  const nLabels = Math.max(3, Math.floor(innerW / 60));
+  const labelEvery = Math.ceil(days / nLabels);
 
   let path = '';
   pts.forEach((p, i) => {
@@ -1005,14 +1057,22 @@ function renderWeightChart(logs, today) {
   });
 
   el.innerHTML = `
-    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Peso diario y promedio de 7 días">
+    <svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Peso diario y promedio de 7 días">
       ${ticks.map((t) => `<line class="grid-line" x1="${padL}" x2="${W - padR}" y1="${y(t)}" y2="${y(t)}"/>
         <text x="${padL - 6}" y="${y(t) + 4}" text-anchor="end">${fmt(t, 1)}</text>`).join('')}
-      ${pts.map((p, i) => (p.w ? `<circle class="w-dot" cx="${x(i)}" cy="${y(p.w)}" r="3.5"><title>${esc(prettyDate(p.date))}: ${fmt(p.w, 1)} kg</title></circle>` : '')).join('')}
+      ${pts.map((p, i) => (p.w ? `<circle class="w-dot" cx="${x(i)}" cy="${y(p.w)}" r="3"><title>${esc(prettyDate(p.date))}: ${fmt(p.w, 1)} kg</title></circle>` : '')).join('')}
       <path class="w-avg" d="${path}"/>
-      ${pts.map((p, i) => (i % labelEvery === 0 || i === days - 1
-        ? `<text x="${x(i)}" y="${H - 8}" text-anchor="middle">${esc(prettyDate(p.date, { day: 'numeric', month: 'numeric' }))}</text>` : '')).join('')}
+      ${pts.map((p, i) => ((days - 1 - i) % labelEvery === 0
+        ? `<text x="${x(i)}" y="${H - 5}" text-anchor="${i === days - 1 ? 'end' : 'middle'}">${shortDM(p.date)}</text>` : '')).join('')}
     </svg>`;
+}
+
+function weekRange(start, end) {
+  const a = fromISO(start), b = fromISO(end);
+  const mon = (d) => d.toLocaleDateString('es-CO', { month: 'short' }).replace('.', '');
+  return a.getMonth() === b.getMonth()
+    ? `${a.getDate()} – ${b.getDate()} ${mon(b)}`
+    : `${a.getDate()} ${mon(a)} – ${b.getDate()} ${mon(b)}`;
 }
 
 function renderWeeksTable(blocks, entries, logs = []) {
@@ -1023,24 +1083,30 @@ function renderWeeksTable(blocks, entries, logs = []) {
     const dayTotals = {};
     for (const e of entries) if (e.date >= b.start && e.date <= b.end) dayTotals[e.date] = (dayTotals[e.date] || 0) + num(e.kcal);
     const kcalDays = Object.values(dayTotals);
-    const kcalAvg = kcalDays.length ? kcalDays.reduce((s, x) => s + x, 0) / kcalDays.length : null;
+    const kcalAvg = kcalDays.length ? kcalDays.reduce((s2, x) => s2 + x, 0) / kcalDays.length : null;
     const burnDays = logs.filter((l) => l.date >= b.start && l.date <= b.end)
       .map((l) => burnedOf(l).total).filter((x) => x > 0);
     const burnAvg = burnDays.length ? burnDays.reduce((s2, x) => s2 + x, 0) / burnDays.length : null;
     if (b.weight == null && kcalAvg == null && b.waist == null && b.steps == null && b.sleep == null && burnAvg == null) return '';
+    const stats = [
+      b.waist != null ? `Cintura <b>${fmt(b.waist, 1)} cm</b>` : '',
+      kcalAvg != null ? `Comidas <b>${fmt(r0(kcalAvg))} kcal</b>` : '',
+      b.steps != null ? `Pasos <b>${fmt(r0(b.steps))}</b>` : '',
+      burnAvg != null ? `Quemadas <b>${fmt(r0(burnAvg))} kcal</b>` : '',
+      b.sleep != null ? `Sueño <b>${fmt(b.sleep, 1)} h</b>` : '',
+    ].filter(Boolean).map((x) => `<span>${x}</span>`).join('');
+    const chgClass = change == null ? '' : change < 0 ? 'chg-down' : change > 0 ? 'chg-up' : '';
     return `
-      <tr>
-        <td>${esc(shortDate(b.start))} – ${esc(shortDate(b.end))}</td>
-        <td>${b.weight != null ? `${fmt(b.weight, 1)} kg` : '—'}</td>
-        <td class="${change == null ? '' : change < 0 ? 'chg-down' : change > 0 ? 'chg-up' : ''}">${change == null ? '—' : `${change > 0 ? '+' : ''}${fmt(change, 1)} kg`}</td>
-        <td>${b.waist != null ? `${fmt(b.waist, 1)} cm` : '—'}</td>
-        <td>${kcalAvg != null ? fmt(r0(kcalAvg)) : '—'}</td>
-        <td>${b.steps != null ? fmt(r0(b.steps)) : '—'}</td>
-        <td>${burnAvg != null ? fmt(r0(burnAvg)) : '—'}</td>
-        <td>${b.sleep != null ? `${fmt(b.sleep, 1)} h` : '—'}</td>
-      </tr>`;
+      <div class="week">
+        <div class="week-top">
+          <span class="week-range">${i === 0 ? 'Esta semana' : esc(weekRange(b.start, b.end))}</span>
+          <span class="week-weight">${b.weight != null ? `${fmt(b.weight, 1)} kg` : '—'}</span>
+          <span class="chg ${chgClass}">${change == null ? '' : `${change > 0 ? '+' : change < 0 ? '−' : ''}${fmt(Math.abs(change), 1)} kg`}</span>
+        </div>
+        ${stats ? `<div class="week-stats">${stats}</div>` : ''}
+      </div>`;
   }).join('');
-  $('#weeksTable tbody').innerHTML = rows || '<tr><td colspan="8" class="empty">Todavía no hay datos semanales.</td></tr>';
+  $('#weeksList').innerHTML = rows || '<p class="empty">Todavía no hay datos semanales.</p>';
 }
 
 function renderCalorieHistory(allEntries, today) {
@@ -1052,52 +1118,57 @@ function renderCalorieHistory(allEntries, today) {
     days.push({ date: iso, ...totals(entries.filter((e) => e.date === iso)) });
   }
   const logged = days.filter((d) => d.kcal > 0);
-  const avgK = logged.length ? logged.reduce((s, d) => s + d.kcal, 0) / logged.length : 0;
-  const avgP = logged.length ? logged.reduce((s, d) => s + d.protein, 0) / logged.length : 0;
+  const avgK = logged.length ? logged.reduce((s2, d) => s2 + d.kcal, 0) / logged.length : 0;
+  const avgP = logged.length ? logged.reduce((s2, d) => s2 + d.protein, 0) / logged.length : 0;
   const goal = num(state.goals.kcal);
   const withinGoal = logged.filter((d) => d.kcal <= goal).length;
 
   $('#historyStats').innerHTML = `
-    <div class="stat"><span>Promedio diario</span><strong>${fmt(r0(avgK))} kcal</strong></div>
-    <div class="stat"><span>Proteína promedio</span><strong>${fmt(r0(avgP))} g</strong></div>
-    <div class="stat"><span>Días en meta</span><strong>${withinGoal} / ${logged.length}</strong></div>`;
+    <div class="stat"><span>Promedio</span><strong>${fmt(r0(avgK))} <small>kcal</small></strong></div>
+    <div class="stat"><span>Proteína</span><strong>${fmt(r0(avgP))} <small>g</small></strong></div>
+    <div class="stat"><span>En meta</span><strong>${withinGoal}/${logged.length} <small>días</small></strong></div>`;
 
-  const W = 640, H = 240, padL = 44, padB = 26, padT = 12, padR = 8;
-  const max = Math.max(goal, ...days.map((d) => d.kcal), 100) * 1.1;
+  const el = $('#chart');
+  const { W, H } = chartSize(el, 170);
+  const padL = 38, padB = 22, padT = 14, padR = 6;
+  const max = Math.max(goal, ...days.map((d) => d.kcal), 100) * 1.12;
   const innerW = W - padL - padR, innerH = H - padT - padB;
   const bw = innerW / days.length;
   const y = (v) => padT + innerH - (v / max) * innerH;
-  const ticks = [0, max / 2, max].map((v) => Math.round(v / 100) * 100);
-  const labelEvery = state.range > 10 ? 6 : 1;
+  const ticks = [0, Math.round(max / 2 / 100) * 100];
+  const nLabels = Math.max(3, Math.floor(innerW / 44));
+  const labelEvery = Math.ceil(days.length / nLabels);
 
   const bars = days.map((d, i) => {
     const h = (d.kcal / max) * innerH;
-    const xx = padL + i * bw + bw * 0.15;
+    const barW = Math.min(36, Math.max(2, bw * 0.64));
+    const xx = padL + i * bw + (bw - barW) / 2;
     const over = goal > 0 && d.kcal > goal;
-    const label = i % labelEvery === 0 || i === days.length - 1
-      ? `<text x="${padL + i * bw + bw / 2}" y="${H - 8}" text-anchor="middle">${esc(prettyDate(d.date, { day: 'numeric', month: 'numeric' }))}</text>`
-      : '';
-    return `<rect class="bar-rect${over ? ' over' : ''}" x="${xx}" y="${padT + innerH - h}" width="${bw * 0.7}" height="${h}" rx="3">
+    const label = (days.length - 1 - i) % labelEvery === 0
+      ? `<text x="${padL + i * bw + bw / 2}" y="${H - 5}" text-anchor="middle">${shortDM(d.date)}</text>` : '';
+    return `<rect class="bar-rect${over ? ' over' : ''}" x="${xx}" y="${padT + innerH - h}" width="${barW}" height="${h}" rx="3">
         <title>${esc(prettyDate(d.date))}: ${fmt(r0(d.kcal))} kcal</title></rect>${label}`;
   }).join('');
 
-  $('#chart').innerHTML = `
-    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Calorías por día">
+  el.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Calorías por día">
       ${ticks.map((t) => `<text x="${padL - 6}" y="${y(t) + 4}" text-anchor="end">${fmt(t)}</text>`).join('')}
       ${bars}
       ${goal > 0 ? `<line class="goal-line" x1="${padL}" x2="${W - padR}" y1="${y(goal)}" y2="${y(goal)}"><title>Meta: ${fmt(goal)} kcal</title></line>
         <text x="${padL + 4}" y="${y(goal) - 5}" text-anchor="start">Meta ${fmt(goal)}</text>` : ''}
     </svg>`;
 
-  $('#historyTable tbody').innerHTML = [...days].reverse().map((d) => `
-    <tr class="clickable" data-goto-date="${d.date}" title="Abrir este día">
-      <td>${esc(prettyDate(d.date))}</td>
-      <td>${d.kcal ? fmt(r0(d.kcal)) : '—'}</td>
-      <td>${d.kcal ? fmt(d.protein, 1) : '—'}</td>
-      <td>${d.kcal ? fmt(d.carbs, 1) : '—'}</td>
-      <td>${d.kcal ? fmt(d.fat, 1) : '—'}</td>
-      <td>${d.kcal ? fmt(d.fiber, 1) : '—'}</td>
-    </tr>`).join('');
+  $('#historyList').innerHTML = [...days].reverse().map((d) => {
+    const over = goal > 0 && d.kcal > goal;
+    return `
+      <button class="day" type="button" data-goto-date="${d.date}" title="Abrir este día">
+        <span class="day-date">
+          <strong>${esc(capitalize(prettyDate(d.date, { weekday: 'long', day: 'numeric', month: 'short' }).replace(/\./g, '').replace(' de ', ' ')))}</strong>
+          ${d.kcal ? `<span class="day-macros"><span class="m-p">P ${fmt(d.protein, 0)}</span> · <span class="m-c">C ${fmt(d.carbs, 0)}</span> · <span class="m-f">G ${fmt(d.fat, 0)}</span> · Fib ${fmt(d.fiber, 0)}</span>` : '<span class="day-macros">Sin registros</span>'}
+        </span>
+        <span class="day-kcal ${d.kcal ? (over ? 'over' : '') : 'none'}">${d.kcal ? `${fmt(r0(d.kcal))} kcal` : '—'}</span>
+      </button>`;
+  }).join('');
 }
 
 // ---------------------------------------------------------------------------
@@ -1109,6 +1180,11 @@ function fillProfileForm() {
   const f = $('#profileForm');
   const p = state.profile || { sex: 'm', gym_days: 4.5, session_h: 1, walk_km: 4.6 };
   for (const k of PROFILE_FIELDS) f[k].value = p[k] ?? '';
+  const complete = state.profile && state.profile.weight && state.profile.height && state.profile.age;
+  $('#profileSummary').textContent = complete
+    ? `${fmt(p.age)} años · ${fmt(p.height)} cm · ${fmt(p.weight, 1)} kg${p.waist ? ` · cintura ${fmt(p.waist, 1)} cm` : ''}`
+    : 'Complétalo para calcular tu plan';
+  $('#profileBox').open = !complete;
 }
 
 async function submitProfile(ev) {
@@ -1118,6 +1194,7 @@ async function submitProfile(ev) {
   for (const k of PROFILE_FIELDS.slice(1)) profile[k] = optNum(f[k].value);
   if (await safe(() => state.db.saveProfile(profile), 'No se pudo guardar el perfil') === FAIL) return;
   state.profile = profile;
+  fillProfileForm();
   renderPlan();
   toast('Perfil guardado. Plan recalculado.');
   $('#planResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1136,7 +1213,7 @@ function renderPlan() {
   const el = $('#planResult');
   const p = state.profile;
   if (!p || !p.weight || !p.height || !p.age) {
-    el.innerHTML = `<div class="card"><p class="muted">Completa tu perfil arriba y pulsa <strong>Guardar y recalcular</strong> para ver tus calorías y macros.</p></div>`;
+    el.innerHTML = `<div class="card"><p class="muted small">Completa tu perfil y pulsa <strong>Guardar y recalcular</strong> para ver tus calorías y macros.</p></div>`;
     return;
   }
   const r = calcPlan(p);
@@ -1154,21 +1231,23 @@ function renderPlan() {
         <div class="stat"><span>Proteína</span><strong>${fmt(g.protein)} g</strong></div>
         <div class="stat"><span>Carbohidratos</span><strong>${fmt(g.carbs)} g</strong></div>
         <div class="stat"><span>Grasa</span><strong>${fmt(g.fat)} g</strong></div>
-        <div class="stat"><span>Fibra</span><strong>${fmt(g.fiber)} g o más</strong></div>
-        <div class="stat"><span>Agua</span><strong>${fmt(Math.max(2, g.water_ml / 1000 - 0.5), 1)} a ${fmt(g.water_ml / 1000, 1)} L</strong></div>
-        <div class="stat"><span>Pasos</span><strong>8.000 a 10.000</strong></div>
-        <div class="stat"><span>Sueño</span><strong>7 h o más</strong></div>
+        <div class="stat"><span>Fibra</span><strong>${fmt(g.fiber)}+ g</strong></div>
+        <div class="stat"><span>Agua</span><strong>${fmt(Math.max(2, g.water_ml / 1000 - 0.5), 1)}–${fmt(g.water_ml / 1000, 1)} L</strong></div>
+        <div class="stat"><span>Pasos</span><strong>8–10 mil</strong></div>
+        <div class="stat"><span>Sueño</span><strong>7+ h</strong></div>
         <div class="stat"><span>Por quemar</span><strong>${fmt(g.burn)} kcal</strong></div>
       </div>
-      <p class="muted small">Las calorías por quemar (pasos + entrenamiento) ya están contadas en tus ${fmt(g.kcal)} kcal: no las vuelvas a comer, son las que hacen que el déficit se cumpla.</p>
-      ${same
-        ? '<p class="muted small">✓ Estas son tus metas actuales en la app.</p>'
-        : `<p class="muted small goals-diff">Tus metas actuales en la app: ${fmt(cur.kcal)} kcal · P ${fmt(cur.protein, 1)} g · C ${fmt(cur.carbs, 1)} g · G ${fmt(cur.fat, 1)} g.</p>
-           <div class="row"><button class="btn primary" type="button" id="applyPlanBtn">Usar estas metas en la app</button></div>`}
+      <div class="stack">
+        <p class="muted small">Las calorías por quemar (pasos + entrenamiento) ya están contadas en tus ${fmt(g.kcal)} kcal: no las vuelvas a comer, son las que hacen que el déficit se cumpla.</p>
+        ${same
+          ? '<p class="muted small">✓ Estas son tus metas actuales en la app.</p>'
+          : `<p class="muted small goals-diff">Tus metas actuales en la app: ${fmt(cur.kcal)} kcal · P ${fmt(cur.protein, 1)} g · C ${fmt(cur.carbs, 1)} g · G ${fmt(cur.fat, 1)} g.</p>
+             <button class="btn primary block" type="button" id="applyPlanBtn">Usar estas metas en la app</button>`}
+      </div>
     </div>
 
-    <div class="card prose">
-      <h2>Cómo llegué a esos números</h2>
+    <details class="card prose collapsible">
+      <summary><span class="sum-title">Cómo llegué a esos números</span></summary>
       <ul class="calc-list">
         <li><strong>Gasto en reposo:</strong> unas ${fmt(r0(r.bmr))} kcal (fórmula Mifflin-St Jeor).</li>
         ${r.rfm != null ? `<li><strong>Grasa corporal estimada:</strong> alrededor del ${fmt(r0(r.rfm))}%, calculada con tu estatura y tu cintura (fórmula RFM). Es una estimación y la uso solo como referencia.</li>` : ''}
@@ -1178,7 +1257,7 @@ function renderPlan() {
         <li><strong>Grasa:</strong> unos 0,65 g por kilo. <strong>Carbohidratos:</strong> el resto de las calorías.</li>
       </ul>
       <p class="muted small">No te recomiendo bajar de ${fmt(g.kcal)} kcal: rendirás peor en el gym y será más difícil ganar músculo, sobre todo si duermes poco.</p>
-    </div>`;
+    </details>`;
   const btn = $('#applyPlanBtn');
   if (btn) btn.addEventListener('click', () => applyPlanGoals(g));
 }
@@ -1345,8 +1424,22 @@ async function importJSON(file) {
 // Eventos
 // ---------------------------------------------------------------------------
 function bindEvents() {
-  $('#workoutForm').type.innerHTML = Object.entries(WORKOUT_TYPES)
-    .map(([id, t]) => `<option value="${id}">${t.label}</option>`).join('');
+  $('#fabAdd').addEventListener('click', () => openEntryDialog());
+  // Botón flotante: se esconde al bajar y aparece al subir, para no tapar campos
+  let lastY = window.scrollY;
+  window.addEventListener('scroll', () => {
+    const y = window.scrollY;
+    if (Math.abs(y - lastY) < 6) return;
+    $('#fabAdd').classList.toggle('fab-hidden', y > lastY && y > 120);
+    lastY = y;
+  }, { passive: true });
+  const dateInput = $('#dateInput');
+  dateInput.addEventListener('click', () => { try { dateInput.showPicker(); } catch { /* el navegador abre su selector */ } });
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { if (document.body.dataset.view === 'progreso') renderProgress(); }, 250);
+  });
 
   $$('.tab').forEach((t) => t.addEventListener('click', () => showView(t.dataset.view)));
   $('#dbBadge').addEventListener('click', () => showView('ajustes'));
@@ -1372,7 +1465,7 @@ function bindEvents() {
 
   // Delegación global de clics
   document.addEventListener('click', (e) => {
-    const t = e.target.closest('[data-add-meal],[data-del-entry],[data-edit],[data-pick],[data-change-product],[data-goto-new-product],[data-edit-product],[data-del-product],[data-goto-date],[data-close],[data-water],[data-apply-adjust],[data-goto-plan],[data-edit-meal],[data-new-meal],[data-meal-chip],[data-del-workout]');
+    const t = e.target.closest('[data-add-meal],[data-del-entry],[data-edit],[data-pick],[data-change-product],[data-goto-new-product],[data-edit-product],[data-del-product],[data-goto-date],[data-close],[data-water],[data-apply-adjust],[data-goto-plan],[data-edit-meal],[data-new-meal],[data-meal-chip],[data-del-workout],[data-quick-amount],[data-quick-min]');
     if (!t) return;
     const d = t.dataset;
     if (d.addMeal) openEntryDialog({ meal: d.addMeal });
@@ -1396,11 +1489,15 @@ function bindEvents() {
     else if ('newMeal' in d) openMealDialog();
     else if (d.mealChip) $('#mealForm').label.value = d.mealChip;
     else if (d.delWorkout) deleteWorkout(d.delWorkout);
+    else if (d.quickAmount) { $('#entryForm').amount.value = d.quickAmount; updateEntryPreview(); }
+    else if (d.quickMin) { $('#workoutForm').minutes.value = d.quickMin; updateWorkoutPreview(); }
     else if ('close' in d) t.closest('dialog').close();
   });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && e.target.matches('.entry-main')) e.target.click();
+    if (e.key === 'Enter' && e.target.matches('.entry-main, .product-info')) e.target.click();
   });
+  // Tocar fuera de la hoja (en el fondo oscuro) la cierra
+  $$('dialog.sheet').forEach((dlg) => dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); }));
 
   // Registro
   $('#entryForm').addEventListener('submit', submitEntry);

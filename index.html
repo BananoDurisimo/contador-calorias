@@ -2,34 +2,39 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
   <meta name="theme-color" content="#0a0a0a" />
   <meta name="description" content="Registra tus calorías, macros, peso y hábitos con tus propios productos." />
   <title>Contador de Calorías</title>
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
-  <link rel="alternate icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='44' fill='%23e5e5e5'/><text x='50' y='66' font-size='46' text-anchor='middle' fill='%230a0a0a' font-family='Arial' font-weight='700'>kc</text></svg>" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   <meta name="apple-mobile-web-app-title" content="Calorías" />
-  <link rel="stylesheet" href="css/styles.css?v=9" />
+  <link rel="stylesheet" href="css/styles.css?v=10" />
 </head>
-<body>
+<body data-view="hoy">
   <header class="topbar">
-    <div class="brand">
-      <span class="logo" aria-hidden="true">kc</span>
-      <h1>Contador de Calorías</h1>
-    </div>
-    <div class="top-actions">
-      <button class="btn primary small hidden" id="installBtn" type="button">Instalar app</button>
-      <button class="icon-btn small" id="tipsBtn" type="button" title="Ver tips" aria-label="Ver tips">💡</button>
-      <button class="db-badge" id="dbBadge" type="button" title="Base de datos en uso">Local</button>
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="logo" aria-hidden="true">kc</span>
+        <h1><span class="t-long">Contador de Calorías</span><span class="t-short">Calorías</span></h1>
+      </div>
+      <div class="top-actions">
+        <button class="btn primary small hidden" id="installBtn" type="button">Instalar</button>
+        <button class="icon-btn" id="tipsBtn" type="button" title="Ver tips" aria-label="Ver tips">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"/></svg>
+        </button>
+        <button class="db-badge" id="dbBadge" type="button" title="Base de datos en uso">
+          <span class="db-dot" aria-hidden="true"></span><span id="dbBadgeText">Local</span>
+        </button>
+      </div>
     </div>
   </header>
 
-  <nav class="tabs" role="tablist">
+  <nav class="tabs" role="tablist" aria-label="Secciones">
     <button role="tab" class="tab active" data-view="hoy" aria-selected="true">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v3M17 3v3M4 9h16M5 6h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z"/></svg>
       <span>Diario</span>
@@ -53,39 +58,54 @@
   </nav>
 
   <div class="offline-bar hidden" id="offlineBar" role="status"></div>
+
   <main>
     <!-- ============ DIARIO ============ -->
     <section class="view active" id="view-hoy" role="tabpanel">
-      <div class="card banner hidden" id="loginBanner">
-        <span>☁️ Inicia sesión para guardar tus datos en la nube y verlos en cualquier dispositivo.</span>
+      <div class="banner hidden" id="loginBanner">
+        <span>☁️ Inicia sesión para guardar tus datos en la nube.</span>
         <button class="btn primary small" type="button" id="loginBannerBtn">Iniciar sesión</button>
       </div>
+
       <div class="date-nav">
-        <button class="icon-btn" id="prevDay" type="button" aria-label="Día anterior">‹</button>
-        <input type="date" id="dateInput" aria-label="Fecha" />
-        <button class="icon-btn" id="nextDay" type="button" aria-label="Día siguiente">›</button>
-        <button class="btn ghost small" id="todayBtn" type="button">Hoy</button>
+        <button class="icon-btn" id="prevDay" type="button" aria-label="Día anterior">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <label class="date-pill" title="Cambiar fecha">
+          <span id="dateLabel">Hoy</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          <input type="date" id="dateInput" aria-label="Fecha" />
+        </label>
+        <button class="icon-btn" id="nextDay" type="button" aria-label="Día siguiente">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
       </div>
+      <button class="link-btn today-link hidden" id="todayBtn" type="button">Volver a hoy</button>
 
       <div class="card summary">
-        <div class="ring-wrap">
-          <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
-            <circle class="ring-bg" cx="60" cy="60" r="52" />
-            <circle class="ring-fg" id="ringFg" cx="60" cy="60" r="52" />
-          </svg>
-          <div class="ring-center">
-            <strong id="kcalConsumed">0</strong>
-            <span id="kcalGoalLabel">de 2100 kcal</span>
+        <div class="summary-top">
+          <div class="ring-wrap">
+            <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
+              <circle class="ring-bg" cx="60" cy="60" r="52" />
+              <circle class="ring-fg" id="ringFg" cx="60" cy="60" r="52" />
+            </svg>
+            <div class="ring-center">
+              <strong id="kcalConsumed">0</strong>
+              <span>consumidas</span>
+            </div>
+          </div>
+          <div class="summary-info">
+            <p class="remaining" id="kcalRemaining">Te quedan 2.100 kcal</p>
+            <p class="muted small" id="kcalGoalLabel">Meta 2.100 kcal</p>
           </div>
         </div>
-        <div class="summary-side">
-          <p class="remaining" id="kcalRemaining">Te quedan 2100 kcal</p>
+        <div class="macro-grid">
           <div class="macro" data-macro="protein">
             <div class="macro-head"><span>Proteína</span><span class="macro-val">0 / 0 g</span></div>
             <div class="bar"><div class="bar-fill"></div></div>
           </div>
           <div class="macro" data-macro="carbs">
-            <div class="macro-head"><span>Carbohidratos</span><span class="macro-val">0 / 0 g</span></div>
+            <div class="macro-head"><span>Carbos</span><span class="macro-val">0 / 0 g</span></div>
             <div class="bar"><div class="bar-fill"></div></div>
           </div>
           <div class="macro" data-macro="fat">
@@ -100,9 +120,9 @@
       </div>
 
       <div class="card activity" id="activityCard">
-        <div class="meal-head">
+        <div class="card-title-row">
           <h3>Calorías por quemar</h3>
-          <button class="link-btn" type="button" id="addWorkoutBtn">+ Entrenamiento</button>
+          <button class="chip-action" type="button" id="addWorkoutBtn">+ Entreno</button>
         </div>
         <div class="burn-top">
           <strong id="burnLeft">0</strong>
@@ -117,7 +137,7 @@
             <input type="number" id="hSteps" min="0" max="200000" step="1" inputmode="numeric" placeholder="Pasos de hoy" />
             <div class="km-add">
               <input type="number" id="hKm" min="0" max="100" step="0.1" inputmode="decimal" placeholder="km" aria-label="Kilómetros caminados" />
-              <button class="btn ghost small" type="button" id="addKmBtn">+ Sumar km</button>
+              <button class="btn ghost small" type="button" id="addKmBtn">+ km</button>
             </div>
           </div>
           <span class="hint" id="hStepsHint"></span>
@@ -125,7 +145,7 @@
       </div>
 
       <div class="card habits" id="habitsCard">
-        <div class="meal-head">
+        <div class="card-title-row">
           <h3>Hábitos del día</h3>
           <small class="muted" id="habitsStatus"></small>
         </div>
@@ -133,7 +153,7 @@
           <label>Peso en ayunas (kg)
             <input type="number" id="hWeight" min="20" max="400" step="0.1" inputmode="decimal" placeholder="—" />
           </label>
-          <label>Sueño anoche (h)
+          <label>Sueño (h)
             <input type="number" id="hSleep" min="0" max="24" step="0.25" inputmode="decimal" placeholder="—" />
             <span class="hint" id="hSleepHint"></span>
           </label>
@@ -145,10 +165,10 @@
         <div class="water">
           <div class="macro-head"><span>Agua</span><span class="macro-val" id="waterVal">0 / 0 ml</span></div>
           <div class="bar water-bar"><div class="bar-fill" id="waterFill"></div></div>
-          <div class="row">
-            <button class="btn ghost small" type="button" data-water="-250">− 250 ml</button>
-            <button class="btn ghost small" type="button" data-water="250">+ 250 ml</button>
-            <button class="btn ghost small" type="button" data-water="500">+ 500 ml</button>
+          <div class="water-btns">
+            <button class="btn ghost small" type="button" data-water="-250">−250</button>
+            <button class="btn ghost small" type="button" data-water="250">+250 ml</button>
+            <button class="btn ghost small" type="button" data-water="500">+500 ml</button>
           </div>
         </div>
       </div>
@@ -160,7 +180,7 @@
     <section class="view" id="view-productos" role="tabpanel">
       <div class="toolbar">
         <input type="search" id="productSearch" placeholder="Buscar producto…" aria-label="Buscar producto" />
-        <button class="btn primary" id="newProductBtn" type="button">+ Nuevo producto</button>
+        <button class="btn primary" id="newProductBtn" type="button">+ Nuevo</button>
       </div>
       <div id="productList" class="product-list"></div>
     </section>
@@ -179,72 +199,65 @@
           </div>
         </div>
         <div id="weightChart" class="chart"></div>
-        <p class="muted small legend"><span class="dot dot-daily"></span> peso diario <span class="dot dot-avg"></span> promedio de 7 días</p>
+        <p class="muted small legend"><span class="dot dot-daily"></span> peso diario <span class="dot dot-avg"></span> promedio 7 días</p>
       </div>
 
       <div class="card">
         <h2>Resumen semanal</h2>
-        <div class="table-wrap">
-          <table class="table" id="weeksTable">
-            <thead><tr><th>Semana</th><th>Peso prom.</th><th>Cambio</th><th>Cintura</th><th>kcal prom.</th><th>Pasos</th><th>Quemadas</th><th>Sueño</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
+        <div id="weeksList" class="week-list"></div>
       </div>
 
       <div class="card">
         <div class="card-head">
           <h2>Calorías</h2>
           <div class="seg" role="group" aria-label="Rango de calorías">
-            <button class="seg-btn active" data-range="7" type="button">7 días</button>
-            <button class="seg-btn" data-range="30" type="button">30 días</button>
+            <button class="seg-btn active" data-range="7" type="button">7 d</button>
+            <button class="seg-btn" data-range="30" type="button">30 d</button>
           </div>
         </div>
         <div class="stats" id="historyStats"></div>
         <div id="chart" class="chart"></div>
-      </div>
-      <div class="card">
-        <div class="table-wrap">
-          <table class="table" id="historyTable">
-            <thead><tr><th>Fecha</th><th>kcal</th><th>Prot.</th><th>Carb.</th><th>Grasa</th><th>Fibra</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
+        <div id="historyList" class="day-list"></div>
       </div>
     </section>
 
     <!-- ============ MI PLAN ============ -->
     <section class="view" id="view-plan" role="tabpanel">
-      <div class="card plan-hero">
-        <h2>Mi plan: perder grasa y ganar músculo</h2>
-        <p class="muted">Calculado con tus datos. Si cambia tu peso o tu rutina, actualiza el perfil y el plan se recalcula.</p>
+      <div class="plan-hero">
+        <h2>Mi plan</h2>
+        <p class="muted small">Perder grasa y ganar músculo. Calculado con tu perfil: si cambia tu peso o tu rutina, actualízalo y se recalcula.</p>
       </div>
 
-      <form class="card form" id="profileForm">
-        <h2>Mi perfil</h2>
-        <p class="muted small">Estos datos se guardan en tu base de datos, no en el código público de la página.</p>
-        <div class="grid-4">
-          <label>Sexo
-            <select name="sex"><option value="m">Hombre</option><option value="f">Mujer</option></select>
-          </label>
-          <label>Edad<input type="number" name="age" min="12" max="100" step="1" required /></label>
-          <label>Estatura (cm)<input type="number" name="height" min="100" max="250" step="0.5" required /></label>
-          <label>Peso (kg)<input type="number" name="weight" min="30" max="400" step="0.1" required /></label>
-          <label>Cintura (cm)<input type="number" name="waist" min="40" max="250" step="0.5" /></label>
-          <label>Días de gym / semana<input type="number" name="gym_days" min="0" max="7" step="0.5" required /></label>
-          <label>Horas por sesión<input type="number" name="session_h" min="0" max="5" step="0.25" required /></label>
-          <label>Km caminados por día de gym<input type="number" name="walk_km" min="0" max="50" step="0.1" required /></label>
-        </div>
-        <div class="row">
-          <button class="btn primary" type="submit">Guardar y recalcular</button>
-          <button class="btn ghost" type="button" id="useLastWeight">Usar mi último peso registrado</button>
-        </div>
-      </form>
+      <details class="card collapsible" id="profileBox" open>
+        <summary>
+          <span class="sum-title">Mi perfil</span>
+          <span class="sum-sub" id="profileSummary"></span>
+        </summary>
+        <form class="form" id="profileForm">
+          <p class="muted small">Se guarda en tu base de datos, no en el código público de la página.</p>
+          <div class="grid-2">
+            <label>Sexo
+              <select name="sex"><option value="m">Hombre</option><option value="f">Mujer</option></select>
+            </label>
+            <label>Edad<input type="number" name="age" min="12" max="100" step="1" inputmode="numeric" required /></label>
+            <label>Estatura (cm)<input type="number" name="height" min="100" max="250" step="0.5" inputmode="decimal" required /></label>
+            <label>Peso (kg)<input type="number" name="weight" min="30" max="400" step="0.1" inputmode="decimal" required /></label>
+            <label>Cintura (cm)<input type="number" name="waist" min="40" max="250" step="0.5" inputmode="decimal" /></label>
+            <label>Días de gym/sem<input type="number" name="gym_days" min="0" max="7" step="0.5" inputmode="decimal" required /></label>
+            <label>Horas por sesión<input type="number" name="session_h" min="0" max="5" step="0.25" inputmode="decimal" required /></label>
+            <label>Km por día de gym<input type="number" name="walk_km" min="0" max="50" step="0.1" inputmode="decimal" required /></label>
+          </div>
+          <div class="btn-stack">
+            <button class="btn primary" type="submit">Guardar y recalcular</button>
+            <button class="btn ghost" type="button" id="useLastWeight">Usar mi último peso</button>
+          </div>
+        </form>
+      </details>
 
       <div id="planResult"></div>
 
-      <div class="card prose">
-        <h2>Cómo ajustar</h2>
+      <details class="card prose collapsible">
+        <summary><span class="sum-title">Cómo ajustar</span></summary>
         <ul>
           <li><strong>Pésate</strong> todas las mañanas, después de ir al baño y en ayunas. Usa el <strong>promedio de la semana</strong>, no el número de cada día. Regístralo en <em>Hábitos del día</em>.</li>
           <li><strong>Mide tu cintura</strong> una vez por semana, a la altura del ombligo.</li>
@@ -252,10 +265,10 @@
           <li><strong>Si bajas más de 1,2 kg por semana o te sientes sin fuerza:</strong> suma 150 kcal.</li>
         </ul>
         <p class="muted small">La pestaña <em>Progreso</em> revisa estas reglas con tus pesos y te propone el ajuste.</p>
-      </div>
+      </details>
 
-      <div class="card prose">
-        <h2>Lo que más va a influir en tus resultados</h2>
+      <details class="card prose collapsible">
+        <summary><span class="sum-title">Lo que más va a influir</span></summary>
         <ol>
           <li><strong>Pasar 8 a 12 horas sentado.</strong> Es lo más importante y probablemente explica los 5 a 10 kg que subiste este año. Levántate y camina 3 a 5 minutos cada hora que juegues, por ejemplo entre partidas. La meta es llegar a 8.000 a 10.000 pasos al día. Esto puede quemar 200 a 400 kcal diarias más sin cambiar lo que comes.</li>
           <li><strong>Dormir poco.</strong> Dormir 6 horas y despertarte cansado da más hambre y hace que pierdas más músculo durante un déficit. Intenta dormir al menos 7 horas. Las noches en que madrugas, corta el PC más temprano.</li>
@@ -263,96 +276,94 @@
           <li><strong>Pesas.</strong> Intenta subir peso o repeticiones poco a poco. Eso le indica a tu cuerpo que conserve y construya músculo mientras pierdes grasa.</li>
           <li><strong>Bebidas.</strong> El Mr Tea cero no aporta calorías, así que puedes seguir tomándolo. El alcohol una vez al mes no es un problema.</li>
         </ol>
-      </div>
+      </details>
 
-      <div class="card prose">
-        <h2>Tus comidas</h2>
+      <details class="card prose collapsible">
+        <summary><span class="sum-title">Tus comidas</span></summary>
         <ul>
           <li><strong>Desayuno</strong> · 10 a 12 am</li>
           <li><strong>Almuerzo</strong> · 3 a 5 pm</li>
           <li><strong>Cena</strong> · desde las 10 pm</li>
         </ul>
         <p class="muted small">Son la base de cada día. Con <em>+ Agregar comida</em> sumas otra (por ejemplo, media tarde) y con <em>⋯</em> renombras o quitas una; si juntas desayuno y almuerzo, quita una y mueve sus alimentos a la otra. La meta de proteína de cada comida se ajusta según cuántas tengas ese día.</p>
-      </div>
+      </details>
 
-      <div class="card prose">
-        <h2>Proteína barata para tu presupuesto</h2>
+      <details class="card prose collapsible">
+        <summary><span class="sum-title">Proteína barata</span></summary>
         <ul>
           <li><strong>Animal:</strong> huevos, pechuga o pernil de pollo sin piel, atún en lata en agua, carne molida magra, queso campesino, leche descremada, kumis o yogur sin azúcar e hígado.</li>
           <li><strong>Vegetal:</strong> lentejas y fríjoles. Aportan proteína y fibra, aunque la mayoría de sus calorías vienen de los carbohidratos.</li>
         </ul>
         <p class="muted small">Cuando crees estos alimentos en <em>Productos</em>, toma los valores de la etiqueta de cada uno.</p>
-      </div>
+      </details>
 
       <p class="muted small disclaimer">Es una estimación con fórmulas estándar (Mifflin-St Jeor y RFM). Lo que de verdad la valida es cómo evoluciona tu peso en las próximas 3 semanas. Si aparece alguna condición médica, consulta a un nutricionista o a tu médico.</p>
     </section>
 
     <!-- ============ AJUSTES ============ -->
     <section class="view" id="view-ajustes" role="tabpanel">
-      <form class="card form" id="goalsForm">
-        <h2>Metas diarias</h2>
-        <div class="grid-4">
-          <label>Calorías (kcal)<input type="number" name="kcal" min="0" step="1" required /></label>
-          <label>Proteína (g)<input type="number" name="protein" min="0" step="0.1" /></label>
-          <label>Carbohidratos (g)<input type="number" name="carbs" min="0" step="0.1" /></label>
-          <label>Grasa (g)<input type="number" name="fat" min="0" step="0.1" /></label>
-          <label>Fibra (g)<input type="number" name="fiber" min="0" step="1" /></label>
-          <label>Agua (ml)<input type="number" name="water_ml" min="0" step="50" /></label>
-          <label>Pasos<input type="number" name="steps" min="0" step="100" /></label>
-          <label>Sueño (h)<input type="number" name="sleep_h" min="0" max="24" step="0.25" /></label>
-          <label>Por quemar (kcal)<input type="number" name="burn" min="0" step="10" /></label>
+      <div class="card form" id="accountCard">
+        <h2>Cuenta y datos</h2>
+        <p class="muted small" id="dbStatusText"></p>
+
+        <div id="authBox" class="stack hidden">
+          <div id="authLoggedOut" class="stack">
+            <label>Correo<input type="email" id="authEmail" autocomplete="email" inputmode="email" /></label>
+            <label>Contraseña<input type="password" id="authPass" autocomplete="current-password" minlength="6" /></label>
+            <div class="btn-stack">
+              <button class="btn primary" type="button" id="loginBtn">Iniciar sesión</button>
+              <button class="btn ghost" type="button" id="signupBtn">Crear cuenta</button>
+            </div>
+          </div>
+          <div id="authLoggedIn" class="stack hidden">
+            <p class="account-line">Sesión iniciada como <strong id="authUser"></strong></p>
+            <div class="btn-stack">
+              <button class="btn ghost" type="button" id="migrateBtn">Copiar datos locales a la nube</button>
+              <button class="btn danger" type="button" id="logoutBtn">Cerrar sesión</button>
+            </div>
+          </div>
         </div>
-        <p class="muted small" id="goalsCheck"></p>
-        <button class="btn primary" type="submit">Guardar metas</button>
-      </form>
 
-      <div class="card form">
-        <h2>Base de datos</h2>
-        <p class="muted" id="dbStatusText"></p>
-
-        <details id="supabaseDetails">
-          <summary>Nube (Supabase): cuenta y conexión</summary>
+        <details id="supabaseDetails" class="advanced">
+          <summary>Conexión avanzada (Supabase)</summary>
           <p class="muted small">
-            La app ya viene conectada a tu proyecto de Supabase: solo crea tu cuenta o inicia sesión.
-            Si quieres usar otro proyecto, ejecuta <code>supabase/schema.sql</code> en su SQL Editor y pega
-            aquí su <em>Project URL</em> y su clave <em>publishable</em>. Esa clave es pública por diseño:
-            tus datos los protege el inicio de sesión y las políticas de seguridad por usuario.
+            La app ya viene conectada a tu proyecto. Para usar otro proyecto, ejecuta <code>supabase/schema.sql</code>
+            en su SQL Editor y pega aquí su <em>Project URL</em> y su clave <em>publishable</em> (es pública por diseño;
+            tus datos los protegen el inicio de sesión y las políticas por usuario).
           </p>
           <form id="supabaseForm" class="stack">
             <label>Project URL<input type="url" name="url" placeholder="https://xxxx.supabase.co" required /></label>
-            <label>Clave anon / publishable<input type="text" name="key" placeholder="eyJhbGciOi… o sb_publishable_…" required autocomplete="off" /></label>
-            <div class="row">
+            <label>Clave publishable<input type="text" name="key" placeholder="sb_publishable_…" required autocomplete="off" /></label>
+            <div class="btn-stack">
               <button class="btn primary" type="submit">Guardar conexión</button>
               <button class="btn ghost" type="button" id="supabaseForget">Quitar conexión</button>
             </div>
           </form>
-
-          <div id="authBox" class="stack hidden">
-            <h3>Cuenta</h3>
-            <div id="authLoggedOut" class="stack">
-              <label>Correo<input type="email" id="authEmail" autocomplete="email" /></label>
-              <label>Contraseña<input type="password" id="authPass" autocomplete="current-password" minlength="6" /></label>
-              <div class="row">
-                <button class="btn primary" type="button" id="loginBtn">Iniciar sesión</button>
-                <button class="btn ghost" type="button" id="signupBtn">Crear cuenta</button>
-              </div>
-            </div>
-            <div id="authLoggedIn" class="stack hidden">
-              <p>Sesión iniciada como <strong id="authUser"></strong>.</p>
-              <div class="row">
-                <button class="btn ghost" type="button" id="migrateBtn">Copiar datos locales a la nube</button>
-                <button class="btn danger" type="button" id="logoutBtn">Cerrar sesión</button>
-              </div>
-            </div>
-          </div>
         </details>
       </div>
+
+      <form class="card form" id="goalsForm">
+        <h2>Metas diarias</h2>
+        <div class="grid-2 goals-grid">
+          <label>Calorías (kcal)<input type="number" name="kcal" min="0" step="1" inputmode="numeric" required /></label>
+          <label>Proteína (g)<input type="number" name="protein" min="0" step="0.1" inputmode="decimal" /></label>
+          <label>Carbohidratos (g)<input type="number" name="carbs" min="0" step="0.1" inputmode="decimal" /></label>
+          <label>Grasa (g)<input type="number" name="fat" min="0" step="0.1" inputmode="decimal" /></label>
+          <label>Fibra (g)<input type="number" name="fiber" min="0" step="1" inputmode="numeric" /></label>
+          <label>Agua (ml)<input type="number" name="water_ml" min="0" step="50" inputmode="numeric" /></label>
+          <label>Pasos<input type="number" name="steps" min="0" step="100" inputmode="numeric" /></label>
+          <label>Sueño (h)<input type="number" name="sleep_h" min="0" max="24" step="0.25" inputmode="decimal" /></label>
+          <label>Por quemar (kcal)<input type="number" name="burn" min="0" step="10" inputmode="numeric" /></label>
+        </div>
+        <p class="muted small" id="goalsCheck"></p>
+        <button class="btn primary block" type="submit">Guardar metas</button>
+      </form>
 
       <div class="card form" id="appCard">
         <h2>App en tu teléfono</h2>
         <p class="muted small" id="appStatus"></p>
-        <div class="row hidden" id="installRow">
-          <button class="btn primary" type="button" id="installBtn2">Instalar app</button>
+        <div class="hidden" id="installRow">
+          <button class="btn primary block" type="button" id="installBtn2">Instalar app</button>
         </div>
         <ol class="muted small install-steps" id="installSteps">
           <li>Abre esta página en <strong>Chrome</strong> en tu Android.</li>
@@ -364,19 +375,29 @@
 
       <div class="card form">
         <h2>Copia de seguridad</h2>
-        <p class="muted small">Exporta o importa todos tus productos, registros, hábitos, metas y perfil en un archivo JSON.</p>
-        <div class="row">
-          <button class="btn ghost" type="button" id="exportBtn">Exportar JSON</button>
-          <label class="btn ghost file-btn">Importar JSON<input type="file" id="importFile" accept="application/json,.json" hidden /></label>
+        <p class="muted small">Exporta o importa tus productos, registros, hábitos, metas y perfil en un archivo JSON.</p>
+        <div class="btn-row">
+          <button class="btn ghost" type="button" id="exportBtn">Exportar</button>
+          <label class="btn ghost file-btn">Importar<input type="file" id="importFile" accept="application/json,.json" hidden /></label>
         </div>
       </div>
     </section>
   </main>
 
+  <!-- Botón flotante: agregar alimento (solo en el Diario) -->
+  <button class="fab" id="fabAdd" type="button" aria-label="Agregar alimento">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+
   <!-- ============ DIÁLOGO TIPS (se abre al entrar) ============ -->
-  <dialog id="tipsDialog" class="tips">
-    <div class="form">
+  <dialog id="tipsDialog" class="sheet tips">
+    <div class="sheet-head">
       <h2>Tips para hoy</h2>
+      <button class="icon-btn" type="button" data-close aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
       <div class="tips-block">
         <h3>Seguimiento</h3>
         <ul>
@@ -394,71 +415,85 @@
           <li><strong>Repartir la proteína.</strong> Divide tus 180 g entre las comidas del día: con 3 comidas son unos 60 g en cada una; con 4, unos 45 g. Que cenes después de las 10 no es un problema; lo que cuenta es el total del día.</li>
         </ol>
       </div>
-      <div class="row end">
-        <button class="btn ghost" type="button" data-goto-plan>Ver mi plan completo</button>
-        <button class="btn primary" type="button" data-close>Entendido</button>
-      </div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn ghost" type="button" data-goto-plan>Ver mi plan</button>
+      <button class="btn primary" type="button" data-close>Entendido</button>
     </div>
   </dialog>
 
   <!-- ============ DIÁLOGO PRODUCTO ============ -->
-  <dialog id="productDialog">
-    <form method="dialog" id="productForm" class="form">
-      <h2 id="productDialogTitle">Nuevo producto</h2>
-      <input type="hidden" name="id" />
-      <label>Nombre *<input type="text" name="name" required maxlength="120" placeholder="Ej. Pechuga de pollo" /></label>
-      <label>Marca (opcional)<input type="text" name="brand" maxlength="80" /></label>
-
-      <fieldset>
-        <legend>Valores nutricionales por…</legend>
-        <div class="grid-3">
-          <label>Cantidad<input type="number" name="base_amount" min="0.01" step="any" required value="100" /></label>
-          <label>Unidad
-            <select name="base_type">
-              <option value="g">gramos (g)</option>
-              <option value="ml">mililitros (ml)</option>
-              <option value="unit">unidad / porción</option>
-            </select>
-          </label>
-          <label class="unit-label-field hidden">Nombre de la porción<input type="text" name="unit_label" maxlength="30" placeholder="Ej. huevo" /></label>
-        </div>
-      </fieldset>
-
-      <div class="grid-3">
-        <label>Calorías (kcal) *<input type="number" name="kcal" min="0" step="any" required /></label>
-        <label>Proteína (g)<input type="number" name="protein" min="0" step="any" value="0" /></label>
-        <label>Carbohidratos (g)<input type="number" name="carbs" min="0" step="any" value="0" /></label>
-        <label>Grasa (g)<input type="number" name="fat" min="0" step="any" value="0" /></label>
-        <label>Fibra (g)<input type="number" name="fiber" min="0" step="any" /></label>
-        <label>Azúcar (g)<input type="number" name="sugar" min="0" step="any" /></label>
+  <dialog id="productDialog" class="sheet">
+    <form method="dialog" id="productForm" class="sheet-form">
+      <div class="sheet-head">
+        <h2 id="productDialogTitle">Nuevo producto</h2>
+        <button class="icon-btn" type="button" data-close aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
       </div>
-      <p class="muted small" id="macroHint"></p>
+      <div class="sheet-body form">
+        <input type="hidden" name="id" />
+        <label>Nombre *<input type="text" name="name" required maxlength="120" placeholder="Ej. Pechuga de pollo" autocomplete="off" /></label>
+        <label>Marca (opcional)<input type="text" name="brand" maxlength="80" autocomplete="off" /></label>
 
-      <div class="row end">
-        <button class="btn ghost" value="cancel" type="button" data-close>Cancelar</button>
-        <button class="btn primary" type="submit">Guardar producto</button>
+        <fieldset>
+          <legend>Valores nutricionales por…</legend>
+          <div class="grid-2">
+            <label>Cantidad<input type="number" name="base_amount" min="0.01" step="any" inputmode="decimal" required value="100" /></label>
+            <label>Unidad
+              <select name="base_type">
+                <option value="g">gramos (g)</option>
+                <option value="ml">mililitros (ml)</option>
+                <option value="unit">unidad / porción</option>
+              </select>
+            </label>
+            <label class="unit-label-field span-2 hidden">Nombre de la porción<input type="text" name="unit_label" maxlength="30" placeholder="Ej. huevo" autocomplete="off" /></label>
+          </div>
+        </fieldset>
+
+        <div class="grid-2">
+          <label class="span-2">Calorías (kcal) *<input type="number" name="kcal" min="0" step="any" inputmode="decimal" required /></label>
+          <label><span class="lbl-p">Proteína (g)</span><input type="number" name="protein" min="0" step="any" inputmode="decimal" value="0" /></label>
+          <label><span class="lbl-c">Carbohidratos (g)</span><input type="number" name="carbs" min="0" step="any" inputmode="decimal" value="0" /></label>
+          <label><span class="lbl-f">Grasa (g)</span><input type="number" name="fat" min="0" step="any" inputmode="decimal" value="0" /></label>
+          <label>Fibra dietaria (g)<input type="number" name="fiber" min="0" step="any" inputmode="decimal" /></label>
+          <label>Azúcar (g)<input type="number" name="sugar" min="0" step="any" inputmode="decimal" /></label>
+        </div>
+        <p class="muted small" id="macroHint"></p>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn ghost" type="button" data-close>Cancelar</button>
+        <button class="btn primary" type="submit">Guardar</button>
       </div>
     </form>
   </dialog>
 
   <!-- ============ DIÁLOGO REGISTRO ============ -->
-  <dialog id="entryDialog">
-    <form method="dialog" id="entryForm" class="form">
-      <h2 id="entryDialogTitle">Agregar alimento</h2>
-      <input type="hidden" name="id" />
-      <div id="productPicker" class="stack">
-        <input type="search" id="pickerSearch" placeholder="Buscar en mis productos…" aria-label="Buscar en mis productos" />
-        <div id="pickerList" class="picker-list" role="listbox"></div>
+  <dialog id="entryDialog" class="sheet">
+    <form method="dialog" id="entryForm" class="sheet-form">
+      <div class="sheet-head">
+        <h2 id="entryDialogTitle">Agregar alimento</h2>
+        <button class="icon-btn" type="button" data-close aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
       </div>
-      <div id="selectedProduct" class="selected hidden"></div>
-      <div class="grid-2">
-        <label>Cantidad<span class="input-unit"><input type="number" name="amount" min="0.01" step="any" required /><span id="amountUnit">g</span></span></label>
-        <label>Comida
-          <select name="meal" id="mealSelect"></select>
-        </label>
+      <div class="sheet-body form">
+        <input type="hidden" name="id" />
+        <div id="productPicker" class="stack">
+          <input type="search" id="pickerSearch" placeholder="Buscar en mis productos…" aria-label="Buscar en mis productos" autocomplete="off" />
+          <div id="pickerList" class="picker-list" role="listbox"></div>
+        </div>
+        <div id="selectedProduct" class="selected hidden"></div>
+        <div class="grid-2">
+          <label>Cantidad<span class="input-unit"><input type="number" name="amount" min="0.01" step="any" inputmode="decimal" required /><span id="amountUnit">g</span></span></label>
+          <label>Comida
+            <select name="meal" id="mealSelect"></select>
+          </label>
+        </div>
+        <div class="quick-amounts" id="quickAmounts"></div>
+        <div class="preview" id="entryPreview"></div>
       </div>
-      <div class="preview" id="entryPreview"></div>
-      <div class="row end">
+      <div class="sheet-actions">
         <button class="btn ghost" type="button" data-close>Cancelar</button>
         <button class="btn primary" type="submit" id="entrySubmit">Agregar</button>
       </div>
@@ -466,17 +501,24 @@
   </dialog>
 
   <!-- ============ DIÁLOGO COMIDA (agregar / renombrar / quitar) ============ -->
-  <dialog id="mealDialog">
-    <form id="mealForm" class="form">
-      <h2 id="mealDialogTitle">Agregar comida</h2>
-      <label>Nombre<input type="text" name="label" maxlength="40" required placeholder="Ej. Brunch" /></label>
-      <div class="chips" id="mealChips"></div>
-      <div id="mealRemoveBox" class="stack remove-box hidden">
-        <p class="muted small" id="mealRemoveText"></p>
-        <label id="mealMoveField">Mover sus alimentos a<select name="moveTo"></select></label>
-        <button class="btn danger" type="button" id="mealRemoveBtn">Quitar esta comida del día</button>
+  <dialog id="mealDialog" class="sheet">
+    <form id="mealForm" class="sheet-form">
+      <div class="sheet-head">
+        <h2 id="mealDialogTitle">Agregar comida</h2>
+        <button class="icon-btn" type="button" data-close aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
       </div>
-      <div class="row end">
+      <div class="sheet-body form">
+        <label>Nombre<input type="text" name="label" maxlength="40" required placeholder="Ej. Brunch" autocomplete="off" /></label>
+        <div class="chips" id="mealChips"></div>
+        <div id="mealRemoveBox" class="stack remove-box hidden">
+          <p class="muted small" id="mealRemoveText"></p>
+          <label id="mealMoveField">Mover sus alimentos a<select name="moveTo"></select></label>
+          <button class="btn danger block" type="button" id="mealRemoveBtn">Quitar esta comida del día</button>
+        </div>
+      </div>
+      <div class="sheet-actions">
         <button class="btn ghost" type="button" data-close>Cancelar</button>
         <button class="btn primary" type="submit" id="mealSubmit">Agregar</button>
       </div>
@@ -484,23 +526,40 @@
   </dialog>
 
   <!-- ============ DIÁLOGO ENTRENAMIENTO ============ -->
-  <dialog id="workoutDialog">
-    <form id="workoutForm" class="form">
-      <h2>Agregar entrenamiento</h2>
-      <label>Tipo<select name="type"></select></label>
-      <div class="grid-2">
-        <label>Duración (min)<input type="number" name="minutes" min="1" max="600" step="1" inputmode="numeric" required /></label>
-        <label>Intensidad
-          <select name="intensity">
-            <option value="ligera">Ligera</option>
-            <option value="moderada">Moderada</option>
-            <option value="intensa">Intensa</option>
-          </select>
-        </label>
+  <dialog id="workoutDialog" class="sheet">
+    <form id="workoutForm" class="sheet-form">
+      <div class="sheet-head">
+        <h2>Agregar entrenamiento</h2>
+        <button class="icon-btn" type="button" data-close aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
       </div>
-      <div class="preview single" id="workoutPreview"></div>
-      <p class="muted small">Estimación con valores MET del Compendio de Actividades Físicas y tu peso. Las caminatas súmalas en km en <em>Pasos</em> para no contarlas dos veces.</p>
-      <div class="row end">
+      <div class="sheet-body form">
+        <fieldset class="tile-group">
+          <legend>Tipo</legend>
+          <label class="tile"><input type="radio" name="type" value="torso" checked /><span>💪 Torso</span></label>
+          <label class="tile"><input type="radio" name="type" value="pierna" /><span>🦵 Pierna</span></label>
+          <label class="tile"><input type="radio" name="type" value="completo" /><span>🏋️ Cuerpo completo</span></label>
+          <label class="tile"><input type="radio" name="type" value="cardio" /><span>🚴 Cardio</span></label>
+        </fieldset>
+        <fieldset class="seg-group">
+          <legend>Intensidad</legend>
+          <label><input type="radio" name="intensity" value="ligera" /><span>Ligera</span></label>
+          <label><input type="radio" name="intensity" value="moderada" checked /><span>Moderada</span></label>
+          <label><input type="radio" name="intensity" value="intensa" /><span>Intensa</span></label>
+        </fieldset>
+        <label>Duración (min)<input type="number" name="minutes" min="1" max="600" step="1" inputmode="numeric" required /></label>
+        <div class="quick-amounts" id="quickMinutes">
+          <button type="button" class="chip chip-btn" data-quick-min="30">30</button>
+          <button type="button" class="chip chip-btn" data-quick-min="45">45</button>
+          <button type="button" class="chip chip-btn" data-quick-min="60">60</button>
+          <button type="button" class="chip chip-btn" data-quick-min="75">75</button>
+          <button type="button" class="chip chip-btn" data-quick-min="90">90</button>
+        </div>
+        <div class="preview single" id="workoutPreview"></div>
+        <p class="muted small">Estimación con valores MET del Compendio de Actividades Físicas y tu peso. Las caminatas súmalas en km en <em>Pasos</em> para no contarlas dos veces.</p>
+      </div>
+      <div class="sheet-actions">
         <button class="btn ghost" type="button" data-close>Cancelar</button>
         <button class="btn primary" type="submit">Agregar</button>
       </div>
@@ -509,6 +568,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script type="module" src="js/app.js?v=9"></script>
+  <script type="module" src="js/app.js?v=10"></script>
 </body>
 </html>
